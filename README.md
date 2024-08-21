@@ -5,21 +5,21 @@ Prior to deep learning, shape was a primary descriptor in medical imaging. Moder
 
 Subsequently, the future objective is to incorporate additional labels beyond those at an elementary level into MedShapeNet, with the objective of transforming it into a supporting instrument for machine learning applications made with Python.
 
-**Direct links related to MSN**
-[💻 Main Project website](https://medshapenet.ikim.nrw/)
-[&#127760; MedShapeNet webinterface](https://medshapenet-ikim.streamlit.app/)
-[&#128196; MedShapeNet 1.0 arXiv Paper](https://arxiv.org/pdf/2308.16139)
-[🛠 MedShapeNet 🐍 Python-API](under construction)
-[📚 Papers/Projects citing MedShapeNet]()(*Under construction*)
+**Direct links related to MSN**<br>
+[💻 Main Project website](https://medshapenet.ikim.nrw/)<br>
+[&#127760; MedShapeNet webinterface](https://medshapenet-ikim.streamlit.app/)<br>
+[&#128196; MedShapeNet 1.0 arXiv Paper](https://arxiv.org/pdf/2308.16139)<br>
+[🛠 MedShapeNet 🐍 Python-API](under construction)<br>
+[📚 Papers/Projects citing MedShapeNet]()(*Under construction*)<br>
 ****
 ### content
-[Overview](#medshapenet--a-large-scale-dataset-of-3d-medical-shapes)
-[Issues](#issues)
-[Contribute shapes](#contribute-shapes)
-[Python API](#python-api)
-[Related publications](#related-publications)
-[References](#references)
-[Contact](#contact)
+[Overview](#medshapenet--a-large-scale-dataset-of-3d-medical-shapes)<br>
+[Issues](#issues)<br>
+[Contribute shapes](#contribute-shapes)<br>
+[Python API](#python-api)<br>
+[Related publications](#related-publications)<br>
+[References](#references)<br>
+[Contact](#contact)<br>
 
 *Example of a few shapes available on MedShapeNet*
 ![Example of a few shapes available on MedShapeNet](ImagesOnGithub/ExampleShapesMSN.png)
@@ -55,7 +55,7 @@ Publications we are aware of [using MedShapeNet](https://proj-page.github.io/med
 List of papers that cite [MedShapeNet](https://scholar.google.com/scholar?cites=6282337273428834698&as_sdt=2005&sciodt=0,5&hl=en).
 
 *Datasets contributed to MedShapeNet 1.0*
-*please check the [&#128196; MedShapeNet 1.0 Paper](https://arxiv.org/pdf/2308.16139) for the corresponding references and source*
+*please check the [&#128196; MedShapeNet 1.0 Paper](https://arxiv.org/pdf/2308.16139) for the corresponding references and source.*
 | **Sources**  | **Description** | **Dataset License**  |
 |--------------|-----------------|----------------------|
 | **AbdomenAtlas**[41]          | 25 organs and seven types of tumor            |                   |
@@ -106,5 +106,5 @@ If you use MedShapeNet in your research or project please cite MedShapeNet as:
 ```
 ****
 ### Contact
-Contact [Gijs Luijten](mailto:gijs.luijten@uk-essen.de) or LinkedIn(www.linkedin.com/in/gijsl) any questions related to MedShapeNet.
+Contact [Gijs Luijten](mailto:gijs.luijten@uk-essen.de) or [LinkedIn](www.linkedin.com/in/gijsl) any questions related to MedShapeNet.
 ****

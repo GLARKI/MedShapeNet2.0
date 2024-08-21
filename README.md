@@ -4,6 +4,7 @@ Prior to deep learning, shape was a primary descriptor in medical imaging. Moder
 **MedShapeNet 2.0** will focus on expanding the database, transforming the storage solution, enhance search functionality and referenceability. additionally the development and continuous improvements of a new Python API should facility easy integration of the database within Python applications. Thereafter we want to include labels beyond a name basis where possible to truly make it into a supporting tool for machine learning applications.
 
 Subsequently, the future objective is to incorporate additional labels beyond those at an elementary level into MedShapeNet, with the objective of transforming it into a supporting instrument for machine learning applications made with Python.
+Become a dataset contributor, help the shape driven community, and increase the visibility of your work.
 
 **Direct links related to MSN**<br>
 [💻 Main Project website](https://medshapenet.ikim.nrw/)<br>

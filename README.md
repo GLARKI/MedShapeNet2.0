@@ -45,9 +45,9 @@ Please provide the following information:
 ### [Python API](https://pypi.org/project/MedShapeNetCore/) 
 *under construction*
 ```bash
-pip install MedShapeNet *under construction*
+pip install MedShapeNet
 ```
-*under construction: reference to it*
+*under heavy construction, it will be made ready soon*
 
 If you desire to contribute by making examples or additional functionallity you are very welcome. Please [contact me](#contact) and perform a [pull request](https://github.com/GLARKI/MedShapeNet2.0/pulls).
 ****

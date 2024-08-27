@@ -1,0 +1,12 @@
+MedShapeNet 2.0 (https://github.com/GLARKI/MedShapeNet2.0) including this PYPI project © 2024 created by Gijs Luijten (http://www.linkedin.com/in/gijsl) is licensed under: 
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0 - https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1).
+
+If you use MedShapeNet in your (research) project(s), we kindly request you to cite MedShapeNet as:
+
+@article{li_medshapenet_2023,
+	title = {MedShapeNet--A Large-Scale Dataset of 3D Medical Shapes for Computer Vision},
+    	journal={arXiv preprint arXiv:2308.16139},
+	doi = {10.48550/arXiv.2308.16139},
+	author = {Li, Jianning and Zhou, Zongwei and Yang, Jiancheng and Pepe, Antonio and Gsaxner, Christina and Luijten, Gijs and others},
+	year = {2023},
+}

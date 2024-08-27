@@ -1,0 +1,2 @@
+[console_scripts]
+msn_help = MedShapeNet.main:MedShapeNet.msn_help

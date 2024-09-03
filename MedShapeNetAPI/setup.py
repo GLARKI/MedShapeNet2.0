@@ -33,7 +33,7 @@ with open('README.md', 'r') as f:
 # Setup information
 setup(
     name='MedShapeNet',
-    version='0.1.3',
+    version='0.1.4',
     description='Python API to connect and work with the MedShapeNet Medical Shapes Database (https://medshapenet.ikim.nrw/)',
     author='Gijs Luijten',
     packages=find_packages(),
@@ -42,7 +42,8 @@ setup(
     # Requirements and dependancies -> you can use this for the requirements.txt as well
     install_requires=[
         # Add dependencies here.
-        # e.g. 'numpy>=1.11.1'
+        # e.g. 'numpy>=1.11.1' -> test the PYPI package when completely done and note the versions.
+        'minio >= 7.2.8'      
     ],
 
     # CLI mapping 'name' to 'method from main.py'

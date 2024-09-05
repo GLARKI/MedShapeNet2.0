@@ -1,11 +1,12 @@
 Metadata-Version: 2.1
 Name: MedShapeNet
-Version: 0.1.3
+Version: 0.1.4
 Summary: Python API to connect and work with the MedShapeNet Medical Shapes Database (https://medshapenet.ikim.nrw/)
 Author: Gijs Luijten
 License: CC BY-NC-SA 4.0
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
+Requires-Dist: minio>=7.2.8
 
 # MedShapeNet API
 The [**MedShapeNet Package (MSN-API)**](https://github.com/GLARKI/MedShapeNet2.0/tree/main/MedShapeNetAPI) is an API that enables direct connectivity to the MedShapeNet database, comprising over 100,000 3D shapes for the medical domain.<br> 

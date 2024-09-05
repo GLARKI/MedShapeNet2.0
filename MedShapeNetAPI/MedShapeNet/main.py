@@ -36,7 +36,8 @@ class MedShapeNet:
     '''
     # Initialize the class (minio)
     def __init__(self,
-                minio_endpoint: str = "127.0.0.1:9000",
+                # minio_endpoint: str = "127.0.0.1:9000", # Local host
+                minio_endpoint: str = "10.49.131.44:9000", # Wireless LAN adaptor wifi 04/09/2024 -> open access will come soon.
                 access_key: str = "msn_user_readwrite", 
                 secret_key: str = "ikim1234",
                 secure: bool = False
@@ -74,7 +75,9 @@ class MedShapeNet:
         None
         '''
         print("""
-                This package is currently under heavy construction, functionality will come soon!,
+                This package is currently under heavy construction, functionality will come soon!
+                Current S3 access is for development only and reachable via https://xrlab.ikim.nrw wifi, full access will come soon!
+              
                 CURRENT FUNCTIONS:
                 - msn_help (in the CLI or in Python as a method of the MedShapeNet Class.)
                 
@@ -132,5 +135,9 @@ class MedShapeNet:
 if __name__ == "__main__":
     # Print the help statement directly
     print("You are running the main.py from MedShapeNet directly, please install the PYPI 'MedShapeNet' package, import MedShapeNet and its methods in your python script.")
+    
+    print("\n")
     msn = MedShapeNet()
     msn.msn_help()
+    print("\n")
+    msn.msn_list_datasets()

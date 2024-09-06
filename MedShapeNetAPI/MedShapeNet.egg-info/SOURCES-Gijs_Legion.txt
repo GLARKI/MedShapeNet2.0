@@ -1,0 +1,12 @@
+LICENSE.txt
+MANIFEST.in
+README.md
+setup.py
+MedShapeNet/__init__.py
+MedShapeNet/main.py
+MedShapeNet.egg-info/PKG-INFO
+MedShapeNet.egg-info/SOURCES.txt
+MedShapeNet.egg-info/dependency_links.txt
+MedShapeNet.egg-info/entry_points.txt
+MedShapeNet.egg-info/requires.txt
+MedShapeNet.egg-info/top_level.txt

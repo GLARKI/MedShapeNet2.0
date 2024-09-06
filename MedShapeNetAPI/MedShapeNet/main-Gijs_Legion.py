@@ -98,61 +98,34 @@ class MedShapeNet:
                 """)
     
 
+    # List all buckets, i.e. all datasets on the S3 (MinIO) storage
     def datasets(self, print_output: bool = False) -> list:
         """
-        Lists all top-level datasets (buckets and top-level folders) in the MinIO server.
-        It avoids listing folders that are nested within other datasets.
-
-        :param print_output: Whether to print the dataset names.
-        :return: A list of dataset names (buckets and top-level folders).
+        Lists all buckets in the MinIO server via print statement
+        Return: A list of bucket names 'list_of_buckets'
         """
-        list_of_datasets = []  # List to store dataset names
-        top_level_folders = set()  # To store top-level folders only
+        # Create list to return
+        list_of_buckets = []
 
         try:
-            # List all buckets
+            # Get the buckets object from minio
             buckets = self.minio_client.list_buckets()
 
+            # Warning if there are no buckets found
             if not buckets:
                 print('No buckets found, please contact the owner of the database.')
-                return list_of_datasets
+                return list_of_buckets
 
-            # Add bucket names to the list_of_datasets
+            # Print buckets and add to list
             for bucket in buckets:
-                bucket_name = bucket.name
-                list_of_datasets.append(bucket_name)
+                list_of_buckets.append(bucket.name)
                 if print_output:
-                    print(f"Bucket: {bucket_name}")
-
-                # List objects in the bucket to find folders
-                objects = self.minio_client.list_objects(bucket_name, recursive=False)
-                database_list = []
-
-                for obj in objects:
-                    # Check if object is a folder (i.e., it ends with '/')
-                    if obj.object_name.endswith('/'):
-                        # Extract folder name (removing the trailing slash)
-                        folder_name = obj.object_name.rstrip('/')
-                        database_list.append(obj.object_name)
-                        if '/' not in folder_name:  # Only consider top-level folders
-                            top_level_folders.add(f"{bucket_name}/{folder_name}")
-
-                # Add top-level folder names to list_of_datasets
-                list_of_datasets.extend(top_level_folders)
-
-            # Iterate through the list and filter out names that are part of others
-            filtered_datasets = [name for name in list_of_datasets
-                     if not any(other.startswith(name + '/') for other in list_of_datasets if name != other)]
-
-            # Print results if requested
-            if print_output:
-                for dataset in filtered_datasets:
-                    print(f"Dataset: {dataset}")
+                    print(f"Bucket: {bucket.name}")
 
         except S3Error as e:
             print(f"Error occurred: {e}")
 
-        return filtered_datasets
+        return list_of_buckets
     
 
     # Give (licence, citation, # of files) info on the dataset
@@ -231,20 +204,9 @@ class MedShapeNet:
         json_count = 0
         stl_count = 0
 
-        # Handle upper case people
-        if file_extension:
-            file_extension = file_extension.lower()
-
         try:
-            # Split the input path into bucket and possible folder prefix
-            if '/' in bucket_name:
-                bucket_name, prefix = bucket_name.split('/', 1)
-            else:
-                bucket_name = bucket_name
-                prefix = None
-
             # List all objects in the bucket
-            objects = self.minio_client.list_objects(bucket_name, prefix=prefix, recursive=True)
+            objects = self.minio_client.list_objects(bucket_name)
 
             # Filter and list objects based on file extension
             for obj in objects:
@@ -288,13 +250,13 @@ class MedShapeNet:
 
     # Multi-threaded downloading from the S3 (MinIO) storage
     # The bucket is currently hosted locally and thus not available for others until I'm granted the storage solution from work.
-    def download_file(self, bucket_name: str, object_name: str, file_path: Path = None, print_output: bool = True) -> None:
+    def download_file(self, bucket_name: str, object_name: str, file_path: Path = None) -> None:
         """
         Downloads a file from a specified bucket in MinIO.
 
         :param bucket_name: Name of the bucket where the file is located.
         :param object_name: Name of the object in MinIO.
-        :param file_path: Path to save the downloaded file. If None, it creates a directory named after the bucket.
+        :param file_path: Path to save the downloaded file.
         """
         if file_path is None:
             # Create a directory for the bucket inside the download directory
@@ -304,10 +266,10 @@ class MedShapeNet:
         
         try:
             self.minio_client.fget_object(bucket_name, object_name, str(file_path))
-            if print_output:
-                print(f"'{object_name}' successfully downloaded to '{file_path}'")
+            print(f"'{object_name}' successfully downloaded to '{file_path}'")
         except S3Error as e:
             print(f"Error occurred: {e}")
+
 
 
 # Entry point for direct execution
@@ -336,16 +298,8 @@ if __name__ == "__main__":
         list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
         print(f"TXT files in {dataset}:\n{list_of_files}\n")
     
-    # print('\n')
-    # msn.dataset_info(dataset)
-
-    # print('\n')
-    # dataset = list_of_datasets[-2]
-    # print(dataset)
-    # stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
-    # stl_file = stl_file[0]
-    # print(stl_file)
-    # msn.download_file(dataset, stl_file, file_path=None, print_output=True)
+    print('\n')
+    msn.dataset_info(dataset)
 
 
 

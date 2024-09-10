@@ -1,13 +1,30 @@
 # main.py
 
 # Imports
+# For dynamic line/access the OS
+import os
 # Imports minio
 from minio import Minio
 from minio.error import S3Error
 # Handle paths system agnostic
 from pathlib import Path
+
 # Imports (save) multithread
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+# Helper function
+def print_dynamic_line():
+    # Get the terminal width
+    try:
+        terminal_width = os.get_terminal_size().columns
+    except OSError:
+        # Default width if the terminal size cannot be determined
+        terminal_width = 80
+
+    # Print a line of underscores that spans the terminal width
+    print('_' * terminal_width)
+
 
 # Main functionality to interact with the data-base/sets, their shapes/information, and labels.
 class MedShapeNet:
@@ -75,6 +92,7 @@ class MedShapeNet:
         --------
         None
         '''
+        print_dynamic_line()
         print("""
                 This package is currently under heavy construction, functionality will come soon!
                 Current S3 access is for development only and reachable via https://xrlab.ikim.nrw wifi, full access will come soon!
@@ -96,6 +114,8 @@ class MedShapeNet:
                 year={2023}
                 }
                 """)
+        print_dynamic_line()
+
     
 
     def datasets(self, print_output: bool = False) -> list:
@@ -121,8 +141,6 @@ class MedShapeNet:
             for bucket in buckets:
                 bucket_name = bucket.name
                 list_of_datasets.append(bucket_name)
-                if print_output:
-                    print(f"Bucket: {bucket_name}")
 
                 # List objects in the bucket to find folders
                 objects = self.minio_client.list_objects(bucket_name, recursive=False)
@@ -146,8 +164,11 @@ class MedShapeNet:
 
             # Print results if requested
             if print_output:
-                for dataset in filtered_datasets:
-                    print(f"Dataset: {dataset}")
+                # Print each dataset with its corresponding number
+                print_dynamic_line()
+                for i, dataset in enumerate(filtered_datasets, 1):  # Start numbering from 1
+                    print(f"{i}. {dataset}")
+                print_dynamic_line()
 
         except S3Error as e:
             print(f"Error occurred: {e}")
@@ -166,6 +187,14 @@ class MedShapeNet:
         :param bucket_name: Name of the bucket to extract dataset information from.
         """
         try:
+
+            # Determine if the bucket_name is a bucket or a bucket/folder name -> extract bucket name
+            if '/' in bucket_name:
+                bucket_name, folder_path  = bucket_name.split('/', 1)
+            else:
+                folder_path = ""
+
+
             # Use dataset_files to get a list of all files in the bucked for file counts and details
             files = self.dataset_files(bucket_name)
 
@@ -175,16 +204,23 @@ class MedShapeNet:
             stl_count = 0
 
             # Read and print the contents of cite.txt and licence.txt if available
+            print_dynamic_line()
+            print(f'\nDATASET: {bucket_name}/{folder_path}/')
             for obj in files:
+
+                # Check if file is inside the specified folder path
+                if folder_path and not obj.startswith(folder_path):
+                    continue
+
                 if obj.endswith("licence.txt"):
                     licence_content = self.minio_client.get_object(bucket_name, obj)
-                    print("\nLICENCE INFO:")
+                    print("LICENCE INFO:")
                     print(licence_content.read().decode('utf-8'))
                 elif obj.endswith("cite.txt"):
                     cite_content = self.minio_client.get_object(bucket_name, obj)
-                    print("\nCITATION INFO:")
+                    print("\n\nCITATION INFO:")
                     print(cite_content.read().decode('utf-8'))
-                
+                                
                 # Count file types
                 if obj.endswith('.txt'):
                     txt_count += 1
@@ -210,6 +246,7 @@ class MedShapeNet:
                 year={2023}}
             THANK YOU AGAIN, ALL FEEDBACK IS WELCOME AT https://github.com/GLARKI/MedShapeNet2.0 or email me https://ait.ikim.nrw/authors/gijs-luijten/ !!!
             """)
+            print_dynamic_line()
 
         except S3Error as e:
             print(f"Error occurred: {e}")
@@ -246,6 +283,10 @@ class MedShapeNet:
             # List all objects in the bucket
             objects = self.minio_client.list_objects(bucket_name, prefix=prefix, recursive=True)
 
+            if print_output:
+                print_dynamic_line()
+                print(f'Files and overview of dataset: {bucket_name + '/' + prefix}\n ')
+
             # Filter and list objects based on file extension
             for obj in objects:
                 # Store the file name
@@ -278,6 +319,7 @@ class MedShapeNet:
                 print(f"{'Total .txt files (how to cite, license file):':<50} {txt_count:>5}")
                 print(f"{'Total .json files (labels, if in dataset as json):':<50} {json_count:>5}")
                 print(f"{'Total .stl files (shapes):':<50} {stl_count:>5}")
+                print_dynamic_line()
 
             return files_list
 
@@ -297,10 +339,21 @@ class MedShapeNet:
         :param file_path: Path to save the downloaded file. If None, it creates a directory named after the bucket.
         """
         if file_path is None:
-            # Create a directory for the bucket inside the download directory
-            bucket_dir = self.download_dir / bucket_name
-            bucket_dir.mkdir(parents=True, exist_ok=True)
-            file_path = bucket_dir / object_name
+            # Handle bucket with or without folder paths
+            if '/' in bucket_name:
+                # Handle case where bucket_name includes folder path
+                bucket_dir = self.download_dir / bucket_name.split('/')[-1]
+                bucket_dir.mkdir(parents=True, exist_ok=True)
+                file_path = bucket_dir / object_name
+                bucket_name = bucket_name.split('/')[0]
+
+            else:
+                # Handle case where bucket_name does not include folder path
+                bucket_dir = self.download_dir / bucket_name
+                bucket_dir.mkdir(parents=True, exist_ok=True)
+                file_path = bucket_dir / object_name
+        
+
         
         try:
             self.minio_client.fget_object(bucket_name, object_name, str(file_path))
@@ -317,30 +370,38 @@ if __name__ == "__main__":
     
     print("\n")
     msn = MedShapeNet()
-    msn.help()
+    # msn.help()
 
     print("\n")
-    list_of_datasets = msn.datasets()
-    print('Example: List of datasets within the S3 storage accessing the first dataset from the list:')
-    print(list_of_datasets)
-    print(list_of_datasets[0])
+    list_of_datasets = msn.datasets(True)
+    # print('\nExample: List of datasets within the S3 storage accessing the first dataset from the list:')
+    # print(list_of_datasets)
+    # print(list_of_datasets[0])
 
-    for dataset in list_of_datasets:
-        print("\n")
-        list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
-        print(f"files in {dataset}:\n{list_of_files}\n")
-        list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
-        print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
-        list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
-        print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
-        list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
-        print(f"TXT files in {dataset}:\n{list_of_files}\n")
+    # for dataset in list_of_datasets:
+    #     print("\n")
+    #     list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
+    #     print(f"files in {dataset}:\n{list_of_files}\n")
+    #     list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
+    #     print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
+    #     list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
+    #     print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
+    #     list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
+    #     print(f"TXT files in {dataset}:\n{list_of_files}\n")
     
     # print('\n')
-    # msn.dataset_info(dataset)
+    # for dataset in list_of_datasets:
+    #     msn.dataset_info(dataset)
+        # msn.dataset_files(dataset, print_output=True)
 
-    # print('\n')
-    # dataset = list_of_datasets[-2]
+    for dataset in list_of_datasets[:]:
+        print(dataset)
+        stl_file = msn.dataset_files(dataset, 'stl', print_output = False)
+        stl_file = stl_file[0]
+        print(stl_file)
+
+        msn.download_file(dataset, stl_file, file_path=None, print_output=True)
+
     # print(dataset)
     # stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
     # stl_file = stl_file[0]

@@ -31,3 +31,4 @@ display_message()
 
 #Import classes and methods from .main
 from .main import MedShapeNet
+from .main import print_dynamic_line

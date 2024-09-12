@@ -22,6 +22,8 @@ def display_message():
         journal={arXiv preprint arXiv:2308.16139},
         year={2023}
         }
+
+        PLEASE USE the def dataset_info(self, bucket_name: str) when utilizing a dataset for your resarch project
         """
         print(message)
         _message_displayed = True

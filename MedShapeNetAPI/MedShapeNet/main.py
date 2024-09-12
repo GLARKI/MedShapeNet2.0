@@ -6,14 +6,19 @@ import os
 # Imports minio
 from minio import Minio
 from minio.error import S3Error
+# To create HTTPConnectionPool/PoolManager and check the socket to handle with timeouts
+import urllib3
+import socket
 # Handle paths system agnostic
 from pathlib import Path
-
-# Imports (save) multithread
+# Imports (thread save) multithreading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+# Progress bar
+from tqdm import tqdm
 
 
-# Helper function
+# Helper function(s)
+# print a line in the terminal for more seperation between commands
 def print_dynamic_line():
     # Get the terminal width
     try:
@@ -24,6 +29,21 @@ def print_dynamic_line():
 
     # Print a line of underscores that spans the terminal width
     print('_' * terminal_width)
+
+# Download a single file: helps for download dataset but is faster then MedShapeNet.download_file().
+def download_file(minio_client: Minio, bucket_name: str, object_name: str, file_path: Path) -> None:
+    """
+    Downloads a file from a specified bucket in MinIO.
+
+    :param minio_client: Minio client object.
+    :param bucket_name: Name of the bucket where the file is located.
+    :param object_name: Name of the object in MinIO.
+    :param file_path: Path to save the downloaded file.
+    """
+    try:
+        minio_client.fget_object(bucket_name, object_name, str(file_path))
+    except S3Error as e:
+        print(f"Error occurred: {e}")
 
 
 # Main functionality to interact with the data-base/sets, their shapes/information, and labels.
@@ -54,11 +74,12 @@ class MedShapeNet:
     '''
     # Initialize the class (minio)
     def __init__(self,
-                # minio_endpoint: str = "127.0.0.1:9000", # Local host
-                minio_endpoint: str = "10.49.131.44:9000", # Wireless LAN adaptor wifi 04/09/2024 -> open access will come soon.
+                minio_endpoint: str = "127.0.0.1:9000", # Local host
+                # minio_endpoint: str = "10.49.131.44:9000", # Wireless LAN adaptor wifi 04/09/2024 -> open access will come soon.
                 access_key: str = "msn_user_readwrite", 
                 secret_key: str = "ikim1234",
-                secure: bool = False
+                secure: bool = False,
+                timeout: int = 5
             ) -> None:
         """
         Initializes the MedShapeNet instance with a MinIO client and sets up a download directory.
@@ -68,8 +89,36 @@ class MedShapeNet:
         :param secret_key: Secret key for MinIO.
         :param secure: Whether to use HTTPS (default is False).
         """
-        # Create and connect minio client
-        self.minio_client = Minio(minio_endpoint, access_key=access_key, secret_key=secret_key, secure=secure)
+        try:
+            # Custom HTTP client with timeout settings
+            http_client = urllib3.PoolManager(
+                timeout=urllib3.util.Timeout(connect=timeout, read=timeout),
+                retries=False,
+            )
+
+            # Create the MinIO client with the custom http client
+            self.minio_client = Minio(
+                minio_endpoint, 
+                access_key=access_key, 
+                secret_key=secret_key, 
+                secure=secure, 
+                http_client=http_client
+            )
+
+            # Test the connection by listing buckets (lightweight operation)
+            self.minio_client.list_buckets()
+            print("Connection to MinIO server successful.\n")
+
+        except urllib3.exceptions.TimeoutError:
+            print(f"Connection to MinIO server timed out after {timeout} seconds.")
+        except urllib3.exceptions.HTTPError as e:
+            print(f"An HTTP error occurred: {e}")
+        except S3Error as e:
+            print(f"Failed to connect to MinIO server: {e}")
+        except socket.timeout:
+            print(f"Socket timed out after {timeout} seconds.")
+        except Exception as e:
+            print(f"An error occurred while connecting to MinIO: {e}")
 
          # Define the download directory
         self.download_dir = Path("msn_downloads")
@@ -117,7 +166,6 @@ class MedShapeNet:
         print_dynamic_line()
 
     
-
     def datasets(self, print_output: bool = False) -> list:
         """
         Lists all top-level datasets (buckets and top-level folders) in the MinIO server.
@@ -252,7 +300,6 @@ class MedShapeNet:
             print(f"Error occurred: {e}")
 
 
-
     # List all files for a bucket/dataset (optional determine .stl,.json,.json file typ)
     def dataset_files(self, bucket_name: str, file_extension: str = None, print_output: bool = False) -> list:
         """
@@ -285,7 +332,11 @@ class MedShapeNet:
 
             if print_output:
                 print_dynamic_line()
-                print(f'Files and overview of dataset: {bucket_name + '/' + prefix}\n ')
+                if prefix != None:
+                    print(f'Files and overview of dataset: {bucket_name + '/' + prefix}\n ')
+                else:
+                    print(f'Files and overview of dataset: {bucket_name}\n ')
+
 
             # Filter and list objects based on file extension
             for obj in objects:
@@ -328,7 +379,7 @@ class MedShapeNet:
             return []
 
 
-    # Multi-threaded downloading from the S3 (MinIO) storage
+    # download a specific file from the S3 (MinIO) storage
     # The bucket is currently hosted locally and thus not available for others until I'm granted the storage solution from work.
     def download_file(self, bucket_name: str, object_name: str, file_path: Path = None, print_output: bool = True) -> None:
         """
@@ -353,12 +404,60 @@ class MedShapeNet:
                 bucket_dir.mkdir(parents=True, exist_ok=True)
                 file_path = bucket_dir / object_name
         
-
-        
         try:
             self.minio_client.fget_object(bucket_name, object_name, str(file_path))
             if print_output:
                 print(f"'{object_name}' successfully downloaded to '{file_path}'")
+        except S3Error as e:
+            print(f"Error occurred: {e}")
+
+
+    # Download a dataset (multithreathed -> increase download speed with factor 2)
+    def download_dataset(self, dataset_name: str, num_threads: int = 4, print_output: bool = True) -> None:
+        """
+        Downloads all files from a specified dataset to a local directory.
+
+        :param dataset_name: Name of the dataset. It can be a bucket name or a folder within a bucket.
+        :param print_output: Whether to print download progress messages.
+        """
+        try:
+            # Determine if dataset_name includes folder path
+            if '/' in dataset_name:
+                bucket_name, folder_path = dataset_name.split('/', 1)
+            else:
+                bucket_name = dataset_name
+                folder_path = None
+            
+            # Create a local download directory based on whether there's a folder path or not
+            download_dir = self.download_dir / (folder_path if folder_path else bucket_name)
+            download_dir.mkdir(parents=True, exist_ok=True)
+
+            # Get a list of all files in the dataset
+            files = self.dataset_files(dataset_name)  # Assuming this function returns all files including paths
+            
+            # num of files
+            num_of_files = len(files)
+
+            # list to store futures (multithreading)
+            futures = []
+
+            with ThreadPoolExecutor(max_workers=num_threads) as executor:
+                with tqdm(total=num_of_files, desc="Downloading files") as pbar:
+                    futures = []
+                    for file in files:
+                        # object_name = Path(file).name
+                        file_path = download_dir / Path(file).name
+                        future = executor.submit(download_file, self.minio_client, bucket_name, file, file_path)
+                        futures.append(future)
+
+                    for future in as_completed(futures):
+                        try:
+                            future.result()  # Retrieve the result to raise any exceptions
+                        except Exception as e:
+                            print(f"Error occurred: {e}")
+                        pbar.update(1)
+
+        
         except S3Error as e:
             print(f"Error occurred: {e}")
 
@@ -370,29 +469,31 @@ if __name__ == "__main__":
     
     print("\n")
     msn = MedShapeNet()
-    # msn.help()
+    msn.help()
 
     print("\n")
     list_of_datasets = msn.datasets(True)
-    # print('\nExample: List of datasets within the S3 storage accessing the first dataset from the list:')
-    # print(list_of_datasets)
-    # print(list_of_datasets[0])
 
-    # for dataset in list_of_datasets:
-    #     print("\n")
-    #     list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
-    #     print(f"files in {dataset}:\n{list_of_files}\n")
-    #     list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
-    #     print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
-    #     list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
-    #     print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
-    #     list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
-    #     print(f"TXT files in {dataset}:\n{list_of_files}\n")
+
+    print('\nExample: List of datasets within the S3 storage accessing the first dataset from the list:')
+    print(list_of_datasets)
+    print(list_of_datasets[0])
+
+    for dataset in list_of_datasets:
+        print("\n")
+        list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
+        print(f"files in {dataset}:\n{list_of_files}\n")
+        list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
+        print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
+        list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
+        print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
+        list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
+        print(f"TXT files in {dataset}:\n{list_of_files}\n")
     
-    # print('\n')
-    # for dataset in list_of_datasets:
-    #     msn.dataset_info(dataset)
-        # msn.dataset_files(dataset, print_output=True)
+    print('\n')
+    for dataset in list_of_datasets:
+        msn.dataset_info(dataset)
+        msn.dataset_files(dataset, print_output=True)
 
     for dataset in list_of_datasets[:]:
         print(dataset)
@@ -402,11 +503,21 @@ if __name__ == "__main__":
 
         msn.download_file(dataset, stl_file, file_path=None, print_output=True)
 
-    # print(dataset)
-    # stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
-    # stl_file = stl_file[0]
-    # print(stl_file)
-    # msn.download_file(dataset, stl_file, file_path=None, print_output=True)
+    print(dataset)
+    stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
+    stl_file = stl_file[0]
+    print(stl_file)
+    msn.download_file(dataset, stl_file, file_path=None, print_output=True)
+
+    print('\n')
+    selected_datasets = [list_of_datasets[i] for i in [2, 3]]
+    for dataset in selected_datasets:
+        print(dataset)
+        msn.download_dataset(dataset,num_threads=4, print_output= False)
+        print('\n')
+
+
+        
 
 
 

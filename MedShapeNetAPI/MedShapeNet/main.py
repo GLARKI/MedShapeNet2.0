@@ -390,13 +390,20 @@ class MedShapeNet:
         :param file_path: Path to save the downloaded file. If None, it creates a directory named after the bucket.
         """
         if file_path is None:
-            # Handle bucket with or without folder paths
+            # Handle bucket with or without folder paths. 
+            # In other words handle both case (bucket per dataset) or one bucket multiple datasets (folders) the same. Flexible for future minio implementations.
             if '/' in bucket_name:
                 # Handle case where bucket_name includes folder path
                 bucket_dir = self.download_dir / bucket_name.split('/')[-1]
-                bucket_dir.mkdir(parents=True, exist_ok=True)
-                file_path = bucket_dir / object_name
+
+                # Check if dataset directory exists, if not create it
+                if not bucket_dir.exists():
+                    bucket_dir.mkdir(parents=True, exist_ok=True)
+
+                # create file path and bucket name. Case insensitive
+                file_path = object_name.split('/')[-1]
                 bucket_name = bucket_name.split('/')[0]
+
 
             else:
                 # Handle case where bucket_name does not include folder path
@@ -461,6 +468,29 @@ class MedShapeNet:
         except S3Error as e:
             print(f"Error occurred: {e}")
 
+    # # Convert .stl (STL format) to .npz (NumPy compressed)
+    # def stl_to_npz(stl_file: str, npz_file: str) -> None:
+    #     """
+    #     Converts an STL file to a NumPy .npz file.
+        
+    #     :param stl_file: Path to the .stl file containing 3D shape data.
+    #     :param npz_file: Path to save the converted .npz file.
+    #     """
+    #     try:
+    #         # Load the STL file
+    #         stl_mesh = mesh.Mesh.from_file(stl_file)
+
+    #         # Extract vertices and faces
+    #         vertices = stl_mesh.vectors.reshape(-1, 3)
+    #         faces = np.arange(len(vertices)).reshape(-1, 3)
+
+    #         # Save vertices and faces into the .npz file
+    #         np.savez_compressed(npz_file, vertices=vertices, faces=faces)
+    #         print(f"Successfully converted {stl_file} to {npz_file}")
+
+    #     except Exception as e:
+    #         print(f"An error occurred while converting stl to npz: {e}")
+
 
 # Entry point for direct execution
 if __name__ == "__main__":
@@ -469,31 +499,31 @@ if __name__ == "__main__":
     
     print("\n")
     msn = MedShapeNet()
-    msn.help()
+    # msn.help()
 
     print("\n")
     list_of_datasets = msn.datasets(True)
 
 
-    print('\nExample: List of datasets within the S3 storage accessing the first dataset from the list:')
-    print(list_of_datasets)
-    print(list_of_datasets[0])
+    # print('\nExample: List of datasets within the S3 storage accessing the first dataset from the list:')
+    # print(list_of_datasets)
+    # print(list_of_datasets[0])
 
-    for dataset in list_of_datasets:
-        print("\n")
-        list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
-        print(f"files in {dataset}:\n{list_of_files}\n")
-        list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
-        print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
-        list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
-        print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
-        list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
-        print(f"TXT files in {dataset}:\n{list_of_files}\n")
+    # for dataset in list_of_datasets:
+    #     print("\n")
+    #     list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
+    #     print(f"files in {dataset}:\n{list_of_files}\n")
+    #     list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
+    #     print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
+    #     list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
+    #     print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
+    #     list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
+    #     print(f"TXT files in {dataset}:\n{list_of_files}\n")
     
-    print('\n')
-    for dataset in list_of_datasets:
-        msn.dataset_info(dataset)
-        msn.dataset_files(dataset, print_output=True)
+    # print('\n')
+    # for dataset in list_of_datasets:
+    #     msn.dataset_info(dataset)
+    #     msn.dataset_files(dataset, print_output=True)
 
     for dataset in list_of_datasets[:]:
         print(dataset)
@@ -503,18 +533,18 @@ if __name__ == "__main__":
 
         msn.download_file(dataset, stl_file, file_path=None, print_output=True)
 
-    print(dataset)
-    stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
-    stl_file = stl_file[0]
-    print(stl_file)
-    msn.download_file(dataset, stl_file, file_path=None, print_output=True)
+    # print(dataset)
+    # stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
+    # stl_file = stl_file[0]
+    # print(stl_file)
+    # msn.download_file(dataset, stl_file, file_path=None, print_output=True)
 
-    print('\n')
-    selected_datasets = [list_of_datasets[i] for i in [2, 3]]
-    for dataset in selected_datasets:
-        print(dataset)
-        msn.download_dataset(dataset,num_threads=4, print_output= False)
-        print('\n')
+    # print('\n')
+    # selected_datasets = [list_of_datasets[i] for i in [2, 3]]
+    # for dataset in selected_datasets:
+    #     print(dataset)
+    #     msn.download_dataset(dataset,num_threads=4, print_output= False)
+    #     print('\n')
 
 
         

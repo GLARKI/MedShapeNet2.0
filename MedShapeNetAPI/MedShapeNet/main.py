@@ -21,8 +21,9 @@ import numpy as np
 from stl import mesh
 # To work with files in temporary memory
 import tempfile
-# handle http requests
+# handle http requests and parse filenames from url
 import requests
+from urllib.parse import urlparse, parse_qs
 
 # # to time method duration
 # from time import time
@@ -64,6 +65,53 @@ def download_file(minio_client: Minio, bucket_name: str, object_name: str, file_
     except S3Error as e:
         print(f"Error occurred: {e}")
 
+def download_file_from_url(url: str, save_folder: str, filename: str = None, extension: str = '.stl', print_output=False) -> None:
+    """Helper function to download a single file from an url."""
+    
+    # Extract filenam from url
+    if filename is None:
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+        if 'files' in query_params:
+            filename = query_params['files'][0]
+        else:
+            filename = 'downloade_file' + extension
+
+
+
+    # create file_path to save
+    save_folder = Path(save_folder)
+    filename_path = Path(filename)
+    file_path = save_folder / filename_path
+
+    #Create the save folder if it doesn't already exists
+    Path(save_folder).mkdir(parents=True, exist_ok=True)
+    
+    # Handle file name conflicts by appending a number if the file already exists
+    base_name, file_extension = os.path.splitext(filename)
+    counter = 1
+    while os.path.exists(file_path):
+        # Create a new filename by appending the counter
+        file_path = save_folder / f'{base_name}_{counter}{file_extension}'
+        counter += 1
+
+    # download file from url
+    try:
+        response = requests.get(url.strip(), stream=True)
+        response.raise_for_status()
+
+        # Save the file in the given folder with the correct filename
+        with open(file_path, 'wb') as file:
+            file.write(response.content)
+
+        if print_output:
+            print(f"Download from url: {url}")
+            print(f"Downloaded {filename}, to directory {save_folder}")
+
+    except Exception as e:
+        print(f"Error downloading {filename}")
+        print(f"Error downloading from url {url}")
+        print(f'Error message: {e}')
 
 # Main functionality to interact with the data-base/sets, their shapes/information, and labels.
 class MedShapeNet:
@@ -750,8 +798,7 @@ class MedShapeNet:
     
 
     # Download and search by url (based on files on Sciebo)
-    @staticmethod
-    def search_and_download_by_name(name: str = None, max_threads: int = 5, save_folder: Path = None) -> None:
+    def search_and_download_by_name(self, name: str = None, max_threads: int = 5, save_folder: Path = None, extension: str = '.stl', print_output = True) -> None:
         '''
         Search and download STL files based on a name search. Files will be downloaded in parallel.
 
@@ -759,27 +806,9 @@ class MedShapeNet:
         :param max_threads: maximum number of threads for downloading files
         :param save_folder: the path to save the found stls -> if None, a folder with the name of the search + "_stl" will be created
         '''
-        
-        def download_file_from_url(url: str, save_folder: str, filename: str, print_output=False) -> None:
-            """Helper function to download a single file."""
-            try:
-                response = requests.get(url.strip(), stream=True)
-                response.raise_for_status()
-
-                # Save the file in the given folder with the correct filename
-                file_path = os.path.join(save_folder, filename)
-                with open(file_path, 'wb') as file:
-                    file.write(response.content)
-
-                if print_output:
-                    print(f"Downloaded {filename}, to directory {save_folder}")
-
-            except Exception as e:
-                print(f"Error downloading {filename}: {e}")
-
         # Perform the search using the search_by_name function
-        matched_urls = MedShapeNet.search_by_name(name, print_output=True)
-
+        matched_urls = self.search_by_name(name, print_output=False)
+        
         # If no URLs were found, stop
         if len(matched_urls) == 0 or None:
             print(f'No entries found for "{name}". Exiting.')
@@ -787,26 +816,28 @@ class MedShapeNet:
 
         # Setup save folder if not defined by the user
         if save_folder is None:
-            save_folder = Path(f'{name}_stl')
+            save_folder = self.download_dir/ f'{name}_stl'
 
         # Create the save folder if it doesn't exist
         if not os.path.exists(save_folder):
             Path(save_folder).mkdir(parents=True, exist_ok=True)
 
         # Download files using multithreading with a tqdm progress bar
-        print(f"Starting download of {len(matched_urls)} files for '{name}'...")
+        if print_output:
+            print(f"Starting download of {len(matched_urls)} files for search '{name}'...")
 
         # Prepare the progress bar
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             # Submit the download tasks and track their progress with tqdm
-            futures = {executor.submit(download_file_from_url, url, save_folder, os.path.basename(url), False): url
+            futures = {executor.submit(download_file_from_url, url = url, save_folder = save_folder, filename = None, extension = extension, print_output = False): url
                     for url in matched_urls}
             
             # Use tqdm to show the progress bar
             for future in tqdm(as_completed(futures), total=len(matched_urls), desc="Downloading files"):
                 pass  # tqdm updates the progress bar automatically
-
-        print(f'Download complete! Files are stored in folder: {save_folder}')
+        
+        if print_output:
+            print(f'Download complete! Files are stored in folder: {save_folder}')
 
 
 
@@ -917,6 +948,7 @@ class MedShapeNet:
             except Exception as e:
                 print(f"Error occurred while deleting temporary directory {temp_dir}: {e}")
     '''
+    
     ''' For saving it as png -> def visualize_random_stl_files
     def visualize_random_stl_files(self, dataset_name: str, num_files: int = 4) -> None:
         """
@@ -1114,47 +1146,70 @@ if __name__ == "__main__":
     # # print(liver_download_urls, "number of liver's found: ", len(liver_download_urls))
 
 
-    def download_file_from_url(url: str, save_folder: str, filename: str, print_output=False) -> None:
-        """Helper function to download a single file."""
-        try:
-            response = requests.get(url.strip(), stream=True)
-            response.raise_for_status()
+    # test download file from url and search dataset and download
+    # instrument_download_urls = msn.search_by_name('instrument', False)
+    # url = instrument_download_urls[0]
+    # save_folder = r'test_download_from_url'
+    # for i in range(3):
+    #     download_file_from_url(url, save_folder,filename=None ,extension='.stl', print_output=True)
 
-            # Save the file in the given folder with the correct filename
-            file_path = os.path.join(save_folder, filename)
-            with open(file_path, 'wb') as file:
-                file.write(response.content)
+    '''
+    from time import time
+    # start_time_1 = time()
+    # msn.search_and_download_by_name(name='face', max_threads=1, save_folder=None, extension='.stl', print_output=True)
+    # end_time_1 = time()
+    # elapsed_time_1 = end_time_1 - start_time_1
 
-            if print_output:
-                print(f"Downloaded {filename}, to directory {save_folder}")
+    # start_time_2 = time()
+    # msn.search_and_download_by_name(name='face', max_threads=2, save_folder=None, extension='.stl', print_output=True)
+    # end_time_2 = time()
+    # elapsed_time_2 = end_time_2 - start_time_2
 
-        except Exception as e:
-            print(f"Error downloading {filename}: {e}")
+    # start_time_4 = time()
+    # msn.search_and_download_by_name(name='face', max_threads=4, save_folder=None, extension='.stl', print_output=True)
+    # end_time_4 = time()
+    # elapsed_time_4 = end_time_4 - start_time_4
 
-    # Create the save folder if it doesn't exist
-    instrument_download_urls = msn.search_by_name('instrument', False)
-    url = instrument_download_urls[0]
+    # start_time_8 = time()
+    # msn.search_and_download_by_name(name='face', max_threads=8, save_folder=None, extension='.stl', print_output=True)
+    # end_time_8 = time()
+    # elapsed_time_8 = end_time_8 - start_time_8
 
-    filename = os.path.basename(url)
+    # start_time_16 = time()
+    # msn.search_and_download_by_name(name='face', max_threads=16, save_folder=None, extension='.stl', print_output=True)
+    # end_time_16 = time()
+    # elapsed_time_16 = end_time_16 - start_time_16
+    start_time_16 = time()
+    msn.search_and_download_by_name(name='face', max_threads=64, save_folder=None, extension='.stl', print_output=True)
+    end_time_16 = time()
+    elapsed_time_16 = end_time_16 - start_time_16
 
-    save_folder = 'test_download_from_url'
+    # print("FACE")
+    # print(f"Elapsed time num_of_workers(1): {elapsed_time_1:.6f} seconds")
+    # print(f"Elapsed time num_of_workers(2): {elapsed_time_2:.6f} seconds")
+    # print(f"Elapsed time num_of_workers(4): {elapsed_time_4:.6f} seconds")
+    # print(f"Elapsed time num_of_workers(8): {elapsed_time_8:.6f} seconds")
+    print(f"Elapsed time num_of_workers(16): {elapsed_time_16:.6f} seconds")
+    '''
 
-    if not os.path.exists(save_folder):
-        Path(save_folder).mkdir(parents=True, exist_ok=True)
+    """
+    Elapsed time num_of_workers(1): 85.026999 seconds
+    Elapsed time num_of_workers(2): 106.440322 seconds
+    Elapsed time num_of_workers(4): 92.529551 seconds
+    Elapsed time num_of_workers(8): 99.029089 seconds
+    Elapsed time num_of_workers(16): 79.506153 seconds
+    Elapsed time num_of_workers(64): 74.478786 seconds
+    _________ URLs:
+    """
 
-    print(url)
-    print(save_folder)
+    from time import time
+    start_time_16 = time()
+    # msn.search_and_download_by_name(name='instrument', max_threads=16, save_folder=None, extension='.stl', print_output=True)
+    msn.search_and_download_by_name(name='face', max_threads=16, save_folder=None, extension='.stl', print_output=True)
+    end_time_16 = time()
+    elapsed_time_16 = end_time_16- start_time_16
+    print(f"INSTRUMENTS Elapsed time num_of_workers(128): {elapsed_time_16:.6f} seconds")
+    # INSTRUMENTS Elapsed time num_of_workers(64): 498.668118 seconds
+    # INSTRUMENTS Elapsed time num_of_workers(128): 486.082569 seconds
 
-    from urllib.parse import urlparse, parse_qs
-    # Parse the URL to get query parameters
-    parsed_url = urlparse(url)
-    query_params = parse_qs(parsed_url.query)
-        # Extract the 'files' parameter from the query
-    if 'files' in query_params:
-        filename = query_params['files'][0]
-    else:
-        # Fallback in case the 'files' parameter is missing
-        filename = 'downloaded_file.stl'
-    print(filename)
-
-    download_file_from_url(url, save_folder,filename,False)
+    

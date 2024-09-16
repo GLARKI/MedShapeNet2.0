@@ -43,7 +43,8 @@ setup(
     install_requires=[
         # Add dependencies here.
         # e.g. 'numpy>=1.11.1' -> test the PYPI package when completely done and note the versions.
-        'minio >= 7.2.8'      
+        # 'minio >= 7.2.8'
+        # 'fire >= 0.4.0'       
     ],
 
     # CLI mapping 'name' to 'method from main.py'
@@ -52,9 +53,12 @@ setup(
             # map 'msn_help' cli cmmand to 'main.py' inside the 'MedShapeNet' package, specifically the function msn_help
             # can be achieved trough wrapper functions or static/class-method decorators
             'msn_help = MedShapeNet.main:MedShapeNet.msn_help',
+            'msn = MedShapeNet.cli:main',
         ],
     },
 
+    # Min/max python
+    python_requires='>=3.8, <3.12',
     # Add README.md file to desciption page using variable description
     long_description=description,
     long_description_content_type='text/markdown',

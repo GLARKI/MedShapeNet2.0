@@ -40,6 +40,13 @@ from urllib.parse import urlparse, parse_qs
 # Helper function(s)
 # print a line in the terminal for more seperation between commands
 def print_dynamic_line():
+    """
+    Prints a line of underscores across the terminal width for visual separation between commands.
+
+    This function determines the terminal width and prints a line of underscores to enhance readability
+    between terminal outputs. If the terminal width cannot be determined, a default width of 80 characters
+    is used.
+    """
     # Get the terminal width
     try:
         terminal_width = os.get_terminal_size().columns
@@ -55,10 +62,10 @@ def download_file(minio_client: Minio, bucket_name: str, object_name: str, file_
     """
     Downloads a file from a specified bucket in MinIO.
 
-    :param minio_client: Minio client object.
-    :param bucket_name: Name of the bucket where the file is located.
-    :param object_name: Name of the object in MinIO.
-    :param file_path: Path to save the downloaded file.
+    :param minio_client: MinIO client object used to interact with the MinIO server.
+    :param bucket_name: Name of the bucket containing the file.
+    :param object_name: Name of the object (file) in the bucket.
+    :param file_path: Path where the downloaded file will be saved.
     """
     try:
         minio_client.fget_object(bucket_name, object_name, str(file_path))
@@ -66,7 +73,15 @@ def download_file(minio_client: Minio, bucket_name: str, object_name: str, file_
         print(f"Error occurred: {e}")
 
 def download_file_from_url(url: str, save_folder: str, filename: str = None, extension: str = '.stl', print_output=False) -> None:
-    """Helper function to download a single file from an url."""
+    """
+    Downloads a file from a URL and saves it to a specified folder.
+
+    :param url: URL of the file to be downloaded.
+    :param save_folder: Directory where the downloaded file will be saved.
+    :param filename: Optional custom filename for the downloaded file. If None, filename is extracted from the URL.
+    :param extension: File extension to be used if filename is not provided. Defaults to '.stl'.
+    :param print_output: Whether to print progress messages.
+    """
     
     # Extract filenam from url
     if filename is None:
@@ -116,14 +131,6 @@ def download_file_from_url(url: str, save_folder: str, filename: str = None, ext
 # Main functionality to interact with the data-base/sets, their shapes/information, and labels.
 class MedShapeNet:
     '''
-    This class holds the main methods to:
-     - Access the database
-     - Download datasets/medical shapes
-     - Visualize shapes
-     - Convert shapes file format for Machine Learning applications
-     - Gain dataset's author and paper information
-     - *Under construction, more to come*
-
     If this API was found useful within your research please cite MedShapeNet:
      @article{li2023medshapenet,
      title={MedShapeNet--A Large-Scale Dataset of 3D Medical Shapes for Computer Vision},
@@ -131,13 +138,23 @@ class MedShapeNet:
      journal={arXiv preprint arXiv:2308.16139},
      year={2023}
      }
+    
+    This class holds methods to:
+     - Setup connection with the database as an object through the MedShapeNet init, and create a directory to store related downloads. (def __init__)
+     - Ask for help specifying all functions. (def help)
+     - Get a list of all datasets included in MedShapeNet and stored on the S3 storage. (def datasets)
+     - Print licence, citation and number of files for a dataset. (def dataset_info)
+     - Get a list of files inside the dataset. (def dataset_files)
+     - Download a file from a dataset (def download_file)
+     - Download seperate datasets completely based on the name. (def download_dataset)
+     - Convert a STL file to a numpy mask. (def stl_to_npz)
+     - Convert an already downloaded dataset to numpy masks stored in the same directory. (def dataset_stl_to_npz)
+     - Download a shape from the database directly as numpy mask, conversion from stl to npz happens in memory. (def download_stl_as_numpy)
+     - Download a complete dataset but get masks instead of stl files, conversion from stl to npz happens in memory. (def download_dataset_masks)
+     - Search the original MedShapeNet (Sciebo storage) by name and get a list of all download urls, downside: you have to look up the reference and licence manually based on the paper. (def search_by_name)
+     - Search and download the original MedShapeNet (Sciebo storage) by name, downside: you have to look up the reference and licence manually based on the paper. (def search_and_download_by_name)
 
-    METHODS:
-    --------
-    msn_help() -> None
-        Prints a help message about the package's current status.
-    --------
-    *Under construction*
+     - *Under construction, more to come*
     '''
     # Initialize the class (minio)
     def __init__(self,
@@ -149,12 +166,24 @@ class MedShapeNet:
                 timeout: int = 5
             ) -> None:
         """
-        Initializes the MedShapeNet instance with a MinIO client and sets up a download directory.
+        Initializes an instance of the class with a MinIO client and sets up a default download directory.
+        Configures the MinIO client with the provided endpoint, access credentials, and security settings. Also creates a 
+        local directory for storing downloaded files if it does not already exist.
 
-        :param minio_endpoint: MinIO server endpoint (e.g., 'localhost:9000').
-        :param access_key: Access key for MinIO.
-        :param secret_key: Secret key for MinIO.
-        :param secure: Whether to use HTTPS (default is False).
+        :param minio_endpoint: Endpoint for the MinIO server (e.g., 'localhost:9000'). 
+                                Can also be set to a remote server address.
+        :param access_key: Access key for authenticating with the MinIO server.
+        :param secret_key: Secret key for authenticating with the MinIO server.
+        :param secure: Boolean flag indicating whether to use HTTPS for communication with the MinIO server. Defaults to False.
+        :param timeout: Timeout duration in seconds for connection and read operations. Defaults to 5 seconds.
+
+        :raises urllib3.exceptions.TimeoutError: If the connection to MinIO times out.
+        :raises urllib3.exceptions.HTTPError: For general HTTP errors during connection.
+        :raises S3Error: If an error occurs related to MinIO operations.
+        :raises socket.timeout: If a socket operation times out.
+
+        Initializes the `self.minio_client` with the provided settings and verifies the connection by listing the buckets. 
+        Creates the download directory at `self.download_dir` if it does not exist.
         """
         try:
             # Custom HTTP client with timeout settings
@@ -203,25 +232,16 @@ class MedShapeNet:
     def help() -> None:
         '''
         Prints a help message regarding current functionality of MedShapeNet API.
-        
-        Returns:
-        --------
-        None
+        Returns: None
         '''
         print_dynamic_line()
         print("""
-                This package is currently under heavy construction, functionality will come soon!
+                NOTE:
+                This package is currently under heavy construction, more functionality will come soon!
                 Current S3 access is for development only and reachable via https://xrlab.ikim.nrw wifi, full access will come soon!
+                Want to contribute, contact me Gijs Luijten via LinkedIn, my work email or the MedShapeNet 2.0 GitHub.
               
-                CURRENT FUNCTIONS:
-                - msn_help (in the CLI or in Python as a method of the MedShapeNet Class.)
-                
-                CALL DOCSTRING of MedShapeNet class or method (in Python) using:
-                print(MedShapeNet.__doc__) OR print(MedShapeNet.'{'method_name'}'.__doc__)
-              
-                Datasets within the s3 bucket:
-                *under construction*
-
+                CITE:
                 If you used MedShapeNet within your research please CITE:
                 @article{li2023medshapenet,
                 title={MedShapeNet--A Large-Scale Dataset of 3D Medical Shapes for Computer Vision},
@@ -229,6 +249,208 @@ class MedShapeNet:
                 journal={arXiv preprint arXiv:2308.16139},
                 year={2023}
                 }
+              
+                CALL DOCSTRING/INFO of MedShapeNet class or method (in Python) using:
+                print(MedShapeNet.__doc__) OR print(MedShapeNet.'{'method_name'}'.__doc__)
+              
+                CURRENT (PYTHON) METHODS:
+                    - def __init__: Setup connection with the database as an object through the MedShapeNet init, and create a directory to store related downloads.
+                    - def help(): Ask for help specifying all functions.
+                    - def datasets(): Get a list of all datasets included in MedShapeNet and stored on the S3 storage. 
+                    - def dataset_info(): Print licence, citation and number of files for a dataset.
+                    - def dataset_files(): Get a list of files inside the dataset.
+                    - def download_file(): Download a file from a dataset
+                    - def download_dataset(): Download seperate datasets completely based on the name.
+                    - def stl_to_npz(): Convert a STL file to a numpy mask.
+                    - def dataset_stl_to_npz(): Convert an already downloaded dataset to numpy masks stored in the same directory.
+                    - def download_stl_as_numpy(): Download a shape from the database directly as numpy mask, conversion from stl to npz happens in memory.
+                    - def download_dataset_masks(): Download a complete dataset but get masks instead of stl files, conversion from stl to npz happens in memory.
+                    - def search_by_name(): Search the original MedShapeNet (Sciebo storage) by name and get a list of all download urls, downside: you have to look up the reference and licence manually based on the paper. 
+                    - def search_and_download_by_name(): Search and download the original MedShapeNet (Sciebo storage) by name, downside: you have to look up the reference and licence manually based on the paper.
+
+                COMMAND LINE INTERFACE
+                    - Methods are callable via the command line interface as well.
+                    e.g., call in cli using: python CLI.py download_file --bucket_name "example-bucket" --object_name "file.stl" --file_path "./local/path/"
+                    CLI Methods:
+                        'MedShapeNet': MedShapeNet,
+                        'help':MedShapeNet.help,
+                        'datasets':MedShapeNet.datasets,
+                        'dataset_info': MedShapeNet.dataset_info,
+                        'dataset_files':MedShapeNet.dataset_files,
+                        'download_file':MedShapeNet.download_file,
+                        'download_dataset':MedShapeNet.download_dataset,
+                        'stl_to_npz':MedShapeNet.stl_to_npz,
+                        'dataset_stl_to_npz':MedShapeNet.dataset_stl_to_npz,
+                        'download_stl_as_numpy':MedShapeNet.download_stl_as_numpy,
+                        'download_dataset_masks':MedShapeNet.download_dataset_masks,
+                        'search_by_name':MedShapeNet.search_by_name,
+                        'search_and_download_by_name':MedShapeNet.search_and_download_by_name
+
+                Datasets within the s3 bucket:
+                *under construction*
+              
+                """)
+        
+        print_dynamic_line()
+        
+        print("""
+                METHODS IN DETAIL
+              
+                    - def __init__(self, minio_endpoint: str, minio_endpoint: str, access_key: str, secret_key: str, secure: bool, timeout: int) -> None:
+                        Initializes an instance of the class with a MinIO client and sets up a default download directory.
+                        Configures the MinIO client with the provided endpoint, access credentials, and security settings. Also creates a 
+                        local directory for storing downloaded files if it does not already exist.
+
+                        :param minio_endpoint: Endpoint for the MinIO server (e.g., 'localhost:9000'). 
+                                                Can also be set to a remote server address.
+                        :param access_key: Access key for authenticating with the MinIO server.
+                        :param secret_key: Secret key for authenticating with the MinIO server.
+                        :param secure: Boolean flag indicating whether to use HTTPS for communication with the MinIO server. Defaults to False.
+                        :param timeout: Timeout duration in seconds for connection and read operations. Defaults to 5 seconds.
+
+                        :raises urllib3.exceptions.TimeoutError: If the connection to MinIO times out.
+                        :raises urllib3.exceptions.HTTPError: For general HTTP errors during connection.
+                        :raises S3Error: If an error occurs related to MinIO operations.
+                        :raises socket.timeout: If a socket operation times out.
+
+                        Initializes the `self.minio_client` with the provided settings and verifies the connection by listing the buckets. 
+                        Creates the download directory at `self.download_dir` if it does not exist.
+              
+                    - def help() -> None:
+                        Prints a help message regarding current functionality of MedShapeNet API.
+                        Returns: None
+              
+                    - def datasets(self, print_output: bool = False) -> list:
+                        Retrieves a list of top-level datasets from the MinIO server. This includes both bucket names and top-level folders 
+                        within the buckets. It excludes nested folders to provide a clear list of primary datasets.
+                        This method first lists all buckets and then inspects each bucket to find top-level folders. It ensures that nested 
+                        folders are not included in the final dataset list. 
+
+                        :param print_output: If True, prints the list of datasets with corresponding indices. Defaults to False.
+                        :return: A list of dataset names, including both bucket names and top-level folder names. Nested folders are excluded.
+              
+                    - def dataset_info(self, bucket_name: str) -> None:
+                        Displays detailed information about a dataset stored in a specified bucket.
+                        
+                        This method performs the following actions:
+                        1. Prints the contents of 'cite.txt' and 'licence.txt' files if they exist in the dataset.
+                        2. Counts and prints the total number of '.txt', '.json', and '.stl' files in the dataset.
+
+                        :param bucket_name: Name of the bucket or a path within a bucket from which to extract dataset information.
+                        :raises S3Error: If an error occurs while accessing or reading files from the bucket.
+                    
+                    - def dataset_files(self, bucket_name: str, file_extension: str = None, print_output: bool = False) -> list:
+                        Lists all files in a specified bucket and optionally filters by file extension.
+
+                        This method performs the following actions:
+                        1. Lists all files in the specified bucket, optionally filtering by a given file extension.
+                        2. Counts and prints the total number of '.txt', '.json', and '.stl' files in the bucket.
+                        3. Prints the file names and summary statistics if requested.
+
+                        :param bucket_name: Name of the bucket or dataset to list files from. May include a folder prefix.
+                        :param file_extension: (Optional) File extension to filter the files by (e.g., '.stl', '.txt', '.json'). If None, all files are listed.
+                        :param print_output: Whether to print the file names and file type counts to the console.
+                        :return: A list of file names in the bucket, filtered by the specified file extension if provided.
+                        :raises S3Error: If an error occurs while listing objects from the bucket.
+              
+                    - def download_file(self, bucket_name: str, object_name: str, file_path: Path = None, print_output: bool = True) -> None:
+                        Downloads a file from a specified bucket in MinIO to a local path.
+
+                        This method handles both cases where the bucket name includes a folder path or not:
+                        - If no file path is provided, it automatically creates a directory structure based on the bucket name and saves the file there.
+                        - If a folder path is included in the bucket name, it extracts the bucket name and creates a subdirectory for the dataset.
+
+                        :param bucket_name: Name of the bucket from which the file is to be downloaded. It may include a folder path.
+                        :param object_name: Name of the file (object) within the bucket.
+                        :param file_path: (Optional) Local path where the downloaded file should be saved. If None, the file is saved in a directory created based on the bucket name.
+                        :param print_output: Whether to print a success message after the file is downloaded.
+                        :raises S3Error: If an error occurs during the download process.
+              
+                    - def download_dataset(self, dataset_name: str, download_dir: Path = None, num_threads: int = 4, print_output: bool = True) -> list:
+                        Downloads all files from a specified dataset to a local directory, with parallel downloading for increased speed.
+                        Retries failed downloads once and returns a list of failed downloads after retry attempts.
+
+                        :param dataset_name: Name of the dataset, which can be a bucket name or a folder within a bucket.
+                        :param download_dir: Path to the local directory where files will be saved. If None, a default directory based on 
+                                            the dataset name is created.
+                        :param num_threads: Number of threads to use for parallel downloading.
+                        :param print_output: Whether to print progress and error messages during the download process.
+                        :return: A list of tuples, each containing (bucket_name, file, file_path) for downloads that failed after retrying.
+              
+                    - def stl_to_npz(self, stl_file: str, npz_file: str, print_output = True) -> None:
+                        Converts an STL file to a NumPy .npz file, compressing the data.
+
+                        :param stl_file: Path to the input .stl file containing 3D shape data.
+                        :param npz_file: Path where the converted .npz file will be saved.
+                        :param print_output: Whether to print a success message upon successful conversion
+
+                    - def dataset_stl_to_npz(self, dataset: str, num_threads: int = 4, output_dir: Path = None, print_output: bool = False) -> None:                
+                        Converts all .stl files in the specified dataset directory to NumPy .npz format and saves them in a designated output directory.
+                        Additionally, copies any .txt and .json files from the dataset to the output directory.
+
+                        :param dataset: Name of the dataset, which can be a bucket or folder name.
+                        :param num_threads: Number of threads for parallel processing of .stl files.
+                        :param output_dir: Directory to save the converted .npz files. Defaults to 'masks_numpy' within the dataset directory.
+                        :param print_output: Whether to print progress messages during the conversion process.
+
+                    - def download_stl_as_numpy(self, bucket_name: str, stl_file: str, output_dir: Path, print_output: True) -> None:
+                        Downloads an STL file from a specified bucket, converts it to a NumPy .npz file, and saves it in the given directory.
+
+                        :param bucket_name: Name of the bucket or dataset where the STL file is located.
+                        :param stl_file: Path to the STL file within the bucket.
+                        :param output_dir: Directory where the converted .npz file will be saved.
+                        :param print_output: Whether to print progress messages.
+              
+                    - def download_dataset_masks(self, dataset_name: str, download_dir: Path = None, num_threads: int = 4, print_output: bool = True) -> list:
+                        Downloads files from a dataset, converting STL files to NumPy masks and saving them as .npz files,
+                        while directly saving non-STL files to the specified directory.
+
+                        STL files are processed in memory and converted to NumPy arrays, which are saved as compressed .npz files.
+                        Non-STL files (e.g., .txt, .json) are copied directly to the download directory.
+
+                        :param dataset_name: Name of the dataset, which may include a bucket name and an optional folder path.
+                        :param download_dir: Directory where the converted and non-STL files should be saved. If None, a default directory
+                                            within the class's download directory is used.
+                        :param num_threads: Number of threads for parallel downloading and processing.
+                        :param print_output: Whether to print progress messages.
+                        :return: A list of STL files that failed to download or convert, even after retry attempts.
+              
+                    - def search_and_download_by_name(self, name: str = None, max_threads: int = 5, save_folder: Path = None, extension: str = '.stl', print_output = True) -> list:
+                        This is a function that still uses the download links from sciebo and will be eventually replaced.
+                        Make sure to look up the correct citations/licence per shape based on the paper "https://arxiv.org/abs/2308.16139"
+                        
+                        Searches for and downloads files based on a name search. STL files will be downloaded in parallel.
+
+                        The method searches for files related to the specified name, downloads them, and saves them in the designated folder.
+                        Failed downloads are retried.
+
+                        :param name: The name of the organ or disease to search for.
+                        :param max_threads: Maximum number of threads to use for downloading files.
+                        :param save_folder: Path to the folder where the found STL files should be saved. If None, a folder named after the search query with "_stl" appended will be created.
+                        :param extension: File extension to use when saving files (default is '.stl').
+                        :param print_output: Whether to print progress messages.
+                        :return: A list of URLs for downloads that failed even after retry attempts.
+              
+                HELPER FUNCTIONS WITHIN THE CLASS
+                - def print_dynamic_line():
+                    Prints a line of underscores across the terminal width for visual separation between commands.
+                    This function determines the terminal width and prints a line of underscores to enhance readability between terminal outputs.
+                    If the terminal width cannot be determined, a default width of 80 characters is used.
+
+                - def download_file(minio_client: Minio, bucket_name: str, object_name: str, file_path: Path) -> None:
+                    Downloads a file from a specified bucket in MinIO.
+                    :param minio_client: MinIO client object used to interact with the MinIO server.
+                    :param bucket_name: Name of the bucket containing the file.
+                    :param object_name: Name of the object (file) in the bucket.
+                    :param file_path: Path where the downloaded file will be saved.
+
+                - def download_file_from_url(url: str, save_folder: str, filename: str = None, extension: str = '.stl', print_output=False) -> None:
+                    Downloads a file from a URL and saves it to a specified folder.
+                    :param url: URL of the file to be downloaded.
+                    :param save_folder: Directory where the downloaded file will be saved.
+                    :param filename: Optional custom filename for the downloaded file. If None, filename is extracted from the URL.
+                    :param extension: File extension to be used if filename is not provided. Defaults to '.stl'.
+                    :param print_output: Whether to print progress messages.
                 """)
         print_dynamic_line()
 
@@ -236,11 +458,15 @@ class MedShapeNet:
     # Create a list of datasets within the S3 storage
     def datasets(self, print_output: bool = False) -> list:
         """
-        Lists all top-level datasets (buckets and top-level folders) in the MinIO server.
-        It avoids listing folders that are nested within other datasets.
+        Retrieves a list of top-level datasets from the MinIO server. This includes both bucket names and top-level folders 
+        within the buckets. It excludes nested folders to provide a clear list of primary datasets.
 
-        :param print_output: Whether to print the dataset names.
-        :return: A list of dataset names (buckets and top-level folders).
+        This method first lists all buckets and then inspects each bucket to find top-level folders. It ensures that nested 
+        folders are not included in the final dataset list. 
+
+        :param print_output: If True, prints the list of datasets with corresponding indices. Defaults to False.
+
+        :return: A list of dataset names, including both bucket names and top-level folder names. Nested folders are excluded.
         """
         list_of_datasets = []  # List to store dataset names
         top_level_folders = set()  # To store top-level folders only
@@ -296,11 +522,14 @@ class MedShapeNet:
     # Adding to MedShapeNet class
     def dataset_info(self, bucket_name: str) -> None:
         """
-        Provides detailed information on the dataset:
-        1. Prints the contents of the 'cite.txt' and 'licence.txt' files if they exist.
-        2. Prints the total number of '.txt', '.json', and '.stl' files in the dataset.
-        
-        :param bucket_name: Name of the bucket to extract dataset information from.
+        Displays detailed information about a dataset stored in a specified bucket.
+
+        This method performs the following actions:
+        1. Prints the contents of 'cite.txt' and 'licence.txt' files if they exist in the dataset.
+        2. Counts and prints the total number of '.txt', '.json', and '.stl' files in the dataset.
+
+        :param bucket_name: Name of the bucket or a path within a bucket from which to extract dataset information.
+        :raises S3Error: If an error occurs while accessing or reading files from the bucket.
         """
         try:
 
@@ -452,11 +681,18 @@ class MedShapeNet:
     # The bucket is currently hosted locally and thus not available for others until I'm granted the storage solution from work.
     def download_file(self, bucket_name: str, object_name: str, file_path: Path = None, print_output: bool = True) -> None:
         """
-        Downloads a file from a specified bucket in MinIO.
+        Downloads a file from a specified bucket in MinIO to a local path.
 
-        :param bucket_name: Name of the bucket where the file is located.
-        :param object_name: Name of the object in MinIO.
-        :param file_path: Path to save the downloaded file. If None, it creates a directory named after the bucket.
+        This method handles both cases where the bucket name includes a folder path or not:
+        - If no file path is provided, it automatically creates a directory structure based on the bucket name and saves the file there.
+        - If a folder path is included in the bucket name, it extracts the bucket name and creates a subdirectory for the dataset.
+
+        :param bucket_name: Name of the bucket from which the file is to be downloaded. It may include a folder path.
+        :param object_name: Name of the file (object) within the bucket.
+        :param file_path: (Optional) Local path where the downloaded file should be saved. If None, the file is saved in a directory created based on the bucket name.
+        :param print_output: Whether to print a success message after the file is downloaded.
+
+        :raises S3Error: If an error occurs during the download process.
         """
         # To later print the dataset name which it is downloaded from.
         dataset = bucket_name
@@ -491,12 +727,17 @@ class MedShapeNet:
 
 
     # Download a dataset (multithreathed -> increase download speed with factor 2)
-    def download_dataset(self, dataset_name: str, download_dir: Path = None, num_threads: int = 4, print_output: bool = True) -> None:
+    def download_dataset(self, dataset_name: str, download_dir: Path = None, num_threads: int = 4, print_output: bool = True) -> list:
         """
-        Downloads all files from a specified dataset to a local directory.
+        Downloads all files from a specified dataset to a local directory, with parallel downloading for increased speed.
+        Retries failed downloads once and returns a list of failed downloads after retry attempts.
 
-        :param dataset_name: Name of the dataset. It can be a bucket name or a folder within a bucket.
-        :param print_output: Whether to print download progress messages.
+        :param dataset_name: Name of the dataset, which can be a bucket name or a folder within a bucket.
+        :param download_dir: Path to the local directory where files will be saved. If None, a default directory based on 
+                            the dataset name is created.
+        :param num_threads: Number of threads to use for parallel downloading.
+        :param print_output: Whether to print progress and error messages during the download process.
+        :return: A list of tuples, each containing (bucket_name, file, file_path) for downloads that failed after retrying.
         """
         try:
             # Determine if dataset_name includes folder path
@@ -519,6 +760,7 @@ class MedShapeNet:
 
             # list to store futures (multithreading)
             futures = []
+            failed_downloads = []
 
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
                 with tqdm(total=num_of_files, desc="Downloading files") as pbar:
@@ -534,23 +776,48 @@ class MedShapeNet:
                             future.result()  # Retrieve the result to raise any exceptions
                         except Exception as e:
                             print(f"Error occurred: {e}")
+                            failed_downloads.append((bucket_name, file, file_path))
                         pbar.update(1)
+
+            # Retry failed downloads if any
+            if failed_downloads:
+                print(f"Retrying {len(failed_downloads)} failed downloads...")
+                with tqdm(total=len(failed_downloads), desc="Retrying failed downloads") as retry_pbar:
+                    with ThreadPoolExecutor(max_workers=num_threads) as retry_executor:
+                        retry_futures = []
+                        failed_retry_downloads = []
+                        for bucket_name, file, file_path in failed_downloads:
+                            retry_future = retry_executor.submit(download_file, self.minio_client, bucket_name, file, file_path)
+                            retry_futures.append(retry_future)
+
+                        for retry_future, (bucket_name, file, file_path) in zip(as_completed(retry_futures), failed_downloads):
+                            try:
+                                retry_future.result()
+                            except Exception as retry_error:
+                                print(f"Retry failed for {file}: {retry_error}")
+                                failed_retry_downloads.append(bucket_name, file, file_path)
+                            retry_pbar.update(1)
             
             # Print dataset info to make sure the researchers sees the citations and licence info.
             self.dataset_info(dataset_name)
-
         
         except S3Error as e:
             print(f"Error occurred: {e}")
+
+        if print_output:
+            print(f'Dataset {dataset_name} is downloaded with {len(failed_retry_downloads)} failures')
+
+        return failed_retry_downloads
 
 
     # Convert .stl (STL format) to .npz (NumPy compressed)
     def stl_to_npz(self, stl_file: str, npz_file: str, print_output = True) -> None:
         """
-        Converts an STL file to a NumPy .npz file.
-        
-        :param stl_file: Path to the .stl file containing 3D shape data.
-        :param npz_file: Path to save the converted .npz file.
+        Converts an STL file to a NumPy .npz file, compressing the data.
+
+        :param stl_file: Path to the input .stl file containing 3D shape data.
+        :param npz_file: Path where the converted .npz file will be saved.
+        :param print_output: Whether to print a success message upon successful conversion
         """
         try:
             # Load the STL file
@@ -572,13 +839,13 @@ class MedShapeNet:
     # convert an entire already downloaded dataset to masks
     def dataset_stl_to_npz(self, dataset: str, num_threads: int = 4, output_dir: Path = None, print_output: bool = False) -> None:
         '''
-        Converts all .stl files in the root of the dataset directory to NPZ format and saves them in the masks_numpy folder.
-        Copies .txt and .json files to the masks_numpy folder.
+        Converts all .stl files in the specified dataset directory to NumPy .npz format and saves them in a designated output directory.
+        Additionally, copies any .txt and .json files from the dataset to the output directory.
 
-        :param dataset: Name of the dataset (can be bucket or folder name).
-        :param num_threads: Number of threads for parallel processing.
-        :param output_dir: Directory to save the NPZ files. Defaults to 'masks_numpy' within the dataset directory.
-        :param print_output: Whether to print progress messages.
+        :param dataset: Name of the dataset, which can be a bucket or folder name.
+        :param num_threads: Number of threads for parallel processing of .stl files.
+        :param output_dir: Directory to save the converted .npz files. Defaults to 'masks_numpy' within the dataset directory.
+        :param print_output: Whether to print progress messages during the conversion process.
         '''
         # ensure output dir exists and make it if it doesn't
         if output_dir is None:
@@ -606,9 +873,12 @@ class MedShapeNet:
 
         # function for multithreathing (scope only to this function)
         def process_stl(file_path):
-            # Convert each STL to NPZ with a correlating name
-            npz_file = output_dir / (file_path.stem + '.npz')  # Create the output .npz file path
-            self.stl_to_npz(str(file_path), str(npz_file),  False)
+            try:
+                # Convert each STL to NPZ with a correlating name
+                npz_file = output_dir / (file_path.stem + '.npz')  # Create the output .npz file path
+                self.stl_to_npz(str(file_path), str(npz_file),  False)
+            except Exception as e:
+                print(f"Failed to convert {file_path}: {e}")
 
         # Use a thread pool to convert STL files in parallel
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
@@ -629,11 +899,12 @@ class MedShapeNet:
     # Download a single stl in memory and convert it to numpy and save it
     def download_stl_as_numpy(self, bucket_name: str, stl_file: str, output_dir: Path, print_output: True) -> None:
         """
-        Downloads an STL file in memory, converts it to a NumPy mask, and saves the result as a .npz file.
+        Downloads an STL file from a specified bucket, converts it to a NumPy .npz file, and saves it in the given directory.
 
-        :param bucket_name: Name of the S3 bucket or dataset.
-        :param stl_file: Path to the STL file in the dataset.
-        :param output_dir: Directory where the converted NumPy file should be saved.
+        :param bucket_name: Name of the bucket or dataset where the STL file is located.
+        :param stl_file: Path to the STL file within the bucket.
+        :param output_dir: Directory where the converted .npz file will be saved.
+        :param print_output: Whether to print progress messages.
         """
 
         if '/' in bucket_name:
@@ -671,19 +942,22 @@ class MedShapeNet:
             print(f"An error occurred while processing STL file {stl_file}: {e}")
         
 
-    def download_dataset_masks(self, dataset_name: str, download_dir: Path = None, num_threads: int = 4, print_output: bool = True) -> None:
+    # download the dataset stl and convert it to npz in memory and only return the dataset with npz files instead of stl files
+    def download_dataset_masks(self, dataset_name: str, download_dir: Path = None, num_threads: int = 4, print_output: bool = True) -> list:
         """
-        Downloads files from a dataset, converting STL files to NumPy masks before saving them,
-        and saves non-STL files directly to the specified directory.
+        Downloads files from a dataset, converting STL files to NumPy masks and saving them as .npz files,
+        while directly saving non-STL files to the specified directory.
 
-        STL files are downloaded in memory and converted to NumPy arrays, which are then saved
-        as compressed .npz files. Non-STL files are saved directly to the download directory.
+        STL files are processed in memory and converted to NumPy arrays, which are saved as compressed .npz files.
+        Non-STL files (e.g., .txt, .json) are copied directly to the download directory.
 
         :param dataset_name: Name of the dataset, which may include a bucket name and an optional folder path.
-        :param download_dir: Directory where the dataset should be saved. If None, the directory is determined
-                            based on the dataset_name and stored in the class's download directory.
-        :param num_threads: Number of threads to use for parallel downloading and processing.
+        :param download_dir: Directory where the converted and non-STL files should be saved. If None, a default directory
+                            within the class's download directory is used.
+        :param num_threads: Number of threads for parallel downloading and processing.
         :param print_output: Whether to print progress messages.
+
+        :return: A list of STL files that failed to download or convert, even after retry attempts.
         """
         # Get correct bucket & file paths depending on dataset_name
         try:
@@ -709,6 +983,7 @@ class MedShapeNet:
             other_files = [file for file in files if not file.lower().endswith('.stl')]
 
             # Multithreaded download and converting
+            failed_download_and_conversion = []
             num_of_files = len(files)
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
                 with tqdm(total=num_of_files, desc="Downloading and processing files", unit="file") as pbar:
@@ -729,11 +1004,35 @@ class MedShapeNet:
                             future.result()  # This will raise exceptions if any
                         except Exception as e:
                             print(f"Error occurred: {e}")
+                             # Determine which file failed
+                            if future in futures[len(other_files):]:  # Check if it's in the STL futures
+                                failed_download_and_conversion.append(stl_files[futures.index(future) - len(other_files)])
                         pbar.update(1)
-            
+
+            # retry failures if any
+            if failed_download_and_conversion:
+                print(f"Retrying {len(failed_download_and_conversion)} failed downloads...")
+                num_of_files = len(failed_download_and_conversion)
+                with ThreadPoolExecutor(max_workers=num_threads) as executor:
+                    with tqdm(total=num_of_files, desc="Downloading and processing files", unit="file") as pbar:
+                        futures = []
+                        # Handle STL files (download in memory and convert to NumPy using a helper function)
+                        for stl_file in failed_download_and_conversion:
+                            futures.append(executor.submit(self.download_stl_as_numpy, bucket_name, stl_file, masks_numpy_dir, False))
+
+                        # Wait for all downloads/conversions to complete
+                        for future in as_completed(futures):
+                            try:
+                                future.result()  # This will raise exceptions if any
+                            except Exception as e:
+                                print(f"Error occurred: {e}")
+                            pbar.update(1)
+                
+
             # print output
             if print_output:
-                print(f"Dataset {dataset_name} STL files converted to NumPy masks, other files download, all files stored in {masks_numpy_dir}.")
+                print(f"Dataset {dataset_name} STL files converted to NumPy masks with {len(failed_download_and_conversion)} failures.")
+                print(f"Other files (licence, citation and labels) and all STL files are stored in {masks_numpy_dir}.")
 
             # print licence and citation info ALWAYS when downloading entire dataset.
             self.dataset_info(dataset_name) 
@@ -798,13 +1097,23 @@ class MedShapeNet:
     
 
     # Download and search by url (based on files on Sciebo)
-    def search_and_download_by_name(self, name: str = None, max_threads: int = 5, save_folder: Path = None, extension: str = '.stl', print_output = True) -> None:
+    def search_and_download_by_name(self, name: str = None, max_threads: int = 5, save_folder: Path = None, extension: str = '.stl', print_output = True) -> list:
         '''
-        Search and download STL files based on a name search. Files will be downloaded in parallel.
+        This is a function that still uses the download links from sciebo and will be eventually replaced.
+        Make sure to look up the correct citations/licence per shape based on the paper "https://arxiv.org/abs/2308.16139"
 
-        :param name: string of the organ or disease we want to search for
-        :param max_threads: maximum number of threads for downloading files
-        :param save_folder: the path to save the found stls -> if None, a folder with the name of the search + "_stl" will be created
+        Searches for and downloads files based on a name search. STL files will be downloaded in parallel.
+
+        The method searches for files related to the specified name, downloads them, and saves them in the designated folder.
+        Failed downloads are retried.
+
+        :param name: The name of the organ or disease to search for.
+        :param max_threads: Maximum number of threads to use for downloading files.
+        :param save_folder: Path to the folder where the found STL files should be saved. If None, a folder named after the search query with "_stl" appended will be created.
+        :param extension: File extension to use when saving files (default is '.stl').
+        :param print_output: Whether to print progress messages.
+
+        :return: A list of URLs for downloads that failed even after retry attempts.
         '''
         # Perform the search using the search_by_name function
         matched_urls = self.search_by_name(name, print_output=False)
@@ -826,6 +1135,9 @@ class MedShapeNet:
         if print_output:
             print(f"Starting download of {len(matched_urls)} files for search '{name}'...")
 
+        # track failed downloads
+        failed_downloads = []
+
         # Prepare the progress bar
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             # Submit the download tasks and track their progress with tqdm
@@ -834,14 +1146,34 @@ class MedShapeNet:
             
             # Use tqdm to show the progress bar
             for future in tqdm(as_completed(futures), total=len(matched_urls), desc="Downloading files"):
-                pass  # tqdm updates the progress bar automatically
+                url = futures[future]
+                try:
+                    future.result()  # Retrieve the result to raise any exceptions
+                except Exception as e:
+                    print(f"Error occurred for URL {url}: {e}")
+                    failed_downloads.append(url)
+
+        # Retry failed downloads if any
+        if failed_downloads:
+            print(f"Retrying {len(failed_downloads)} failed downloads...")
+            retry_failed_downloads = []
+            for url in failed_downloads:
+                try:
+                    download_file_from_url(url=url, save_folder=save_folder, filename=None, extension=extension, print_output=False)
+                except Exception as e:
+                    print(f"Retry failed for URL {url}: {e}")
+                    retry_failed_downloads.append(url)
+
+            failed_downloads = retry_failed_downloads
         
         if print_output:
             print(f'Download complete! Files are stored in folder: {save_folder}')
+            print(f'{len(failed_downloads)} downloads failed.')
 
+        return failed_downloads
+    
 
-
-
+        # work / testing in progress
     ''' npz file info - maybe usefull later
     def get_npz_file_info(self, npz_file_path: Path) -> None:
         """
@@ -1202,14 +1534,14 @@ if __name__ == "__main__":
     _________ URLs:
     """
 
-    from time import time
-    start_time_16 = time()
-    # msn.search_and_download_by_name(name='instrument', max_threads=16, save_folder=None, extension='.stl', print_output=True)
-    msn.search_and_download_by_name(name='face', max_threads=16, save_folder=None, extension='.stl', print_output=True)
-    end_time_16 = time()
-    elapsed_time_16 = end_time_16- start_time_16
-    print(f"INSTRUMENTS Elapsed time num_of_workers(128): {elapsed_time_16:.6f} seconds")
-    # INSTRUMENTS Elapsed time num_of_workers(64): 498.668118 seconds
-    # INSTRUMENTS Elapsed time num_of_workers(128): 486.082569 seconds
+    # from time import time
+    # start_time_16 = time()
+    # # msn.search_and_download_by_name(name='instrument', max_threads=16, save_folder=None, extension='.stl', print_output=True)
+    # msn.search_and_download_by_name(name='face', max_threads=16, save_folder=None, extension='.stl', print_output=True)
+    # end_time_16 = time()
+    # elapsed_time_16 = end_time_16- start_time_16
+    # print(f"INSTRUMENTS Elapsed time num_of_workers(128): {elapsed_time_16:.6f} seconds")
+    # # INSTRUMENTS Elapsed time num_of_workers(64): 498.668118 seconds
+    # # INSTRUMENTS Elapsed time num_of_workers(128): 486.082569 seconds
 
     

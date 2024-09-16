@@ -22,8 +22,8 @@ The initial version will be demonstrated during the [MICCAI 2024 tutorial](https
 [MSN Usage](#usage)
 [Cite us](#referencecite)
 [Licence information](#licence)
-
 ****
+
 ## Installation
 You can install the package using pip:
 ```bash
@@ -51,10 +51,12 @@ msn_instance.msn_help()
 print(msn.msn_help.__doc__)
 print(msn.__doc__)
 ```
+****
 
 ## Usage
-The MedShapeNet object will be imported into the Python environment as MedShapeNet, and the methods can be invoked directly either via *MedShapeNet.method(args)* syntax or by creating an instance (,see section about help function,) first.<br>
-For further information on the basic usage of MedShapeNet funcinality and examples of applications made with the [MedShapeNet API](https://github.com/GLARKI/MedShapeNet2.0/tree/main/MedShapeNetAPI), we refer to the [samples](https://github.com/GLARKI/MedShapeNet2.0/tree/main/Samples) available on the [MedShapeNet 2.0 GitHub Page](https://github.com/GLARKI/MedShapeNet2.0).
+The MedShapeNet object will be imported into the Python environment as MedShapeNet, and the methods can be invoked directly either via *MedShapeNet.method(args)* syntax or by creating an instance (,see section about help function,) first.<br><br>
+
+You can use the [GettingStarted.ipynb](https://github.com/GLARKI/MedShapeNet2.0/blob/main/Samples/GettingStarted.ipynb) to get to know MedShapeNet's functionality.
 ****
 
 ## reference/Cite
@@ -68,6 +70,7 @@ If you use MedShapeNet in your (research) project(s), we kindly request you to c
 	year = {2023},
 }
 ```
+****
 
 ## Licence
 [MedShapeNet 2.0](https://github.com/GLARKI/MedShapeNet2.0) © 2024 by [Gijs Luijten](http://www.linkedin.com/in/gijsl) is licensed under:<br>[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International - CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1).

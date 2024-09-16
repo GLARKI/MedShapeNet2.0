@@ -22,6 +22,8 @@ def display_message():
         journal={arXiv preprint arXiv:2308.16139},
         year={2023}
         }
+
+        PLEASE USE the def dataset_info(self, bucket_name: str) to find the proper citation alongside MedShapeNet when utilizing a dataset for your resarch project.
         """
         print(message)
         _message_displayed = True
@@ -31,3 +33,4 @@ display_message()
 
 #Import classes and methods from .main
 from .main import MedShapeNet
+from .main import print_dynamic_line, download_file, download_file_from_url

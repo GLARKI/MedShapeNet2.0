@@ -23,7 +23,7 @@ def display_message():
         year={2023}
         }
 
-        PLEASE USE the def dataset_info(self, bucket_name: str) when utilizing a dataset for your resarch project
+        PLEASE USE the def dataset_info(self, bucket_name: str) to find the proper citation alongside MedShapeNet when utilizing a dataset for your resarch project.
         """
         print(message)
         _message_displayed = True

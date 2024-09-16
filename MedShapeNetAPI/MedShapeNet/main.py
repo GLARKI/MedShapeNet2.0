@@ -145,7 +145,7 @@ class MedShapeNet:
      - Get a list of all datasets included in MedShapeNet and stored on the S3 storage. (def datasets)
      - Print licence, citation and number of files for a dataset. (def dataset_info)
      - Get a list of files inside the dataset. (def dataset_files)
-     - Download a file from a dataset (def download_file)
+     - Download a file from a dataset. (def download_file)
      - Download seperate datasets completely based on the name. (def download_dataset)
      - Convert a STL file to a numpy mask. (def stl_to_npz)
      - Convert an already downloaded dataset to numpy masks stored in the same directory. (def dataset_stl_to_npz)
@@ -560,7 +560,7 @@ class MedShapeNet:
 
                 if obj.endswith("licence.txt"):
                     licence_content = self.minio_client.get_object(bucket_name, obj)
-                    print("LICENCE INFO:")
+                    print("\nLICENCE INFO:")
                     print(licence_content.read().decode('utf-8'))
                 elif obj.endswith("cite.txt"):
                     cite_content = self.minio_client.get_object(bucket_name, obj)
@@ -708,7 +708,7 @@ class MedShapeNet:
                     bucket_dir.mkdir(parents=True, exist_ok=True)
 
                 # create file path and bucket name. Case insensitive
-                file_path = object_name.split('/')[-1]
+                file_path = bucket_dir / object_name.split('/')[-1]
                 bucket_name = bucket_name.split('/')[0]
 
 
@@ -737,8 +737,12 @@ class MedShapeNet:
                             the dataset name is created.
         :param num_threads: Number of threads to use for parallel downloading.
         :param print_output: Whether to print progress and error messages during the download process.
-        :return: A list of tuples, each containing (bucket_name, file, file_path) for downloads that failed after retrying.
+        :return: A list of tuples 'failed_retry_downloads', each containing (bucket_name, file, file_path) for downloads that failed after retrying.
         """
+
+        # Initialize for retry here so in case a 'try' doesn't work, it won't error out on the return.
+        failed_retry_downloads = []
+        
         try:
             # Determine if dataset_name includes folder path
             if '/' in dataset_name:
@@ -785,7 +789,6 @@ class MedShapeNet:
                 with tqdm(total=len(failed_downloads), desc="Retrying failed downloads") as retry_pbar:
                     with ThreadPoolExecutor(max_workers=num_threads) as retry_executor:
                         retry_futures = []
-                        failed_retry_downloads = []
                         for bucket_name, file, file_path in failed_downloads:
                             retry_future = retry_executor.submit(download_file, self.minio_client, bucket_name, file, file_path)
                             retry_futures.append(retry_future)
@@ -805,7 +808,7 @@ class MedShapeNet:
             print(f"Error occurred: {e}")
 
         if print_output:
-            print(f'Dataset {dataset_name} is downloaded with {len(failed_retry_downloads)} failures')
+            print(f'\nDataset {dataset_name} is downloaded with {len(failed_retry_downloads)} failures')
 
         return failed_retry_downloads
 
@@ -1357,55 +1360,22 @@ class MedShapeNet:
 
 # Entry point for direct execution
 if __name__ == "__main__":
-    # This is not intented to run solo, it's a module
-    print("You are running the main.py from MedShapeNet directly, please install the PYPI 'MedShapeNet' package, import MedShapeNet and its methods in your python script.")
+    # This is not intented to run solo, it's a module: Print help and citation info:
+    print("You are running the main.py from MedShapeNet directly,\nPlease install the PYPI MedShapeNet package 'pip install MedShapeNet'.\nUse it in your .py or .ipynb scripts there 'from MedShapeNet import MedShapeNet'.\n")
+    MedShapeNet.help()
+    print(
+        '''
+        If this API was found useful within your research please cite MedShapeNet:
+
+        @article{li2023medshapenet,
+        title={MedShapeNet--A Large-Scale Dataset of 3D Medical Shapes for Computer Vision},
+        author={Li, Jianning and Pepe, Antonio and Gsaxner, Christina and Luijten, Gijs and Jin, Yuan and Ambigapathy, Narmada and Nasca, Enrico and Solak, Naida and Melito, Gian Marco and Memon, Afaque R and others},
+        journal={arXiv preprint arXiv:2308.16139},
+        year={2023}
+        }
+        '''
+    )
     
-    # Instantiate the class object
-    print("\n")
-    msn = MedShapeNet()
-
-    # # Print the help statement directly
-    # msn.help()
-
-    # Print and create a list of datasets
-    print("\n")
-    list_of_datasets = msn.datasets(True)
-
-    # # Print the dataset info
-    # for dataset in list_of_datasets:
-    #     msn.dataset_info(dataset)
-
-    # # Get a list of files per dataset, and based on file type
-    # for dataset in list_of_datasets:
-    #     print("\n")
-    #     list_of_files = msn.dataset_files(dataset, print_output=False) # Print output is optional
-    #     print(f"files in {dataset}:\n{list_of_files}\n")
-    #     list_of_stl_files = msn.dataset_files(dataset, '.stl', print_output=False)
-    #     print(f"STL files in {dataset}:\n{list_of_stl_files}\n")
-    #     list_of_json_files = msn.dataset_files(dataset, '.json', print_output=False)
-    #     print(f"JSON files in {dataset}:\n{list_of_json_files}\n")
-    #     list_of_files = msn.dataset_files(dataset, '.txt', print_output=False)
-    #     print(f"TXT files in {dataset}:\n{list_of_files}\n")
-    
-    # # Print access a specific file within the list
-    # for stl_file in list_of_stl_files:
-    #     print(stl_file)
-    
-    # # Download a specific file
-    # msn.download_file(dataset, list_of_stl_files[0], file_path=None, print_output=True)
-
-    # # Download a specific file
-    # dataset = list_of_datasets[0]
-    # stl_file = msn.dataset_files(dataset, '.stl', print_output=False)
-    # stl_file = stl_file[0]
-    # print(dataset, ' : ', stl_file)
-    # msn.download_file(dataset, stl_file, file_path=None, print_output=True)
-
-    # # Download entire dataset
-    # print('\n')
-    # for dataset in list_of_datasets:
-    #     msn.download_dataset(dataset, download_dir = None, num_threads=4, print_output= False)
-    #     print('\n')
 
     # # Convert downloaded dataset to npz masks
     # for dataset in list_of_datasets:

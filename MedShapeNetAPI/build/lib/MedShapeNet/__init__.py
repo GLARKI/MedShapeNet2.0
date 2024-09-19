@@ -31,6 +31,7 @@ def display_message():
 # Display the message on import
 display_message()
 
-#Import classes and methods from .main
+#Import classes and methods from .main, import cli
 from .main import MedShapeNet
 from .main import print_dynamic_line, download_file, download_file_from_url
+from . import cli

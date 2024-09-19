@@ -33,7 +33,7 @@ with open('README.md', 'r') as f:
 # Setup information
 setup(
     name='MedShapeNet',
-    version='0.1.5',
+    version='0.1.7',
     description='Python API to connect and work with the MedShapeNet Medical Shapes Database (https://medshapenet.ikim.nrw/)',
     author='Gijs Luijten',
     packages=find_packages(),
@@ -44,19 +44,16 @@ setup(
     install_requires=[
         # Add dependencies here.
         'minio>=7.2.8',
-        'tqdm>=4.50.0',
-        'numpy>=1.17.0',
-        'numpy-stl>=2.12.0',
-        'requests>=2.22.0'
-        # 'fire >= 0.4.0'       
+        'tqdm>=4.66.5',
+        'numpy>=2.1.1',
+        'numpy-stl>=3.1.2',
+        'requests>=2.32.3',
+        'fire >=0.6.0',     
     ],
 
     # CLI mapping 'name' to 'method from main.py'
     entry_points={
         'console_scripts':[
-            # map 'msn_help' cli cmmand to 'main.py' inside the 'MedShapeNet' package, specifically the function msn_help
-            # can be achieved trough wrapper functions or static/class-method decorators
-            'msn_help = MedShapeNet.main:MedShapeNet.msn_help',
             'msn = MedShapeNet.cli:main',
         ],
     },
@@ -67,23 +64,24 @@ setup(
     long_description=description,
     long_description_content_type='text/markdown',
 
-    # Additional metadata
+    # # Additional metadata
     classifiers=[
-        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
-        'License :: OSI Approved :: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Scientific/Engineering :: Medical Science Apps.',
+        'Topic :: Multimedia :: Graphics :: 3D Modeling',
         'Topic :: Scientific/Engineering :: Visualization',
-        'Topic :: 3D medical shapes',
-        'Topic :: Large shape repository',
+        'Topic :: Database',
+        'Topic :: Database :: Database Engines/Servers',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
+
 
     # Prints the PostInstallCommand at the end of the setup.
     cmdclass={

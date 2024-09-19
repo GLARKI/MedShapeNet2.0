@@ -240,7 +240,10 @@ class MedShapeNet:
                 This package is currently under heavy construction, more functionality will come soon!
                 Current S3 access is for development only and reachable via https://xrlab.ikim.nrw wifi, full access will come soon!
                 Want to contribute, contact me Gijs Luijten via LinkedIn, my work email or the MedShapeNet 2.0 GitHub.
-              
+                
+                SAMPLE USAGE - With Jupyter Notebook examples:
+                https://github.com/GLARKI/MedShapeNet2.0/tree/main/Samples
+
                 CITE:
                 If you used MedShapeNet within your research please CITE:
                 @article{li2023medshapenet,
@@ -683,6 +686,8 @@ class MedShapeNet:
         """
         Downloads a file from a specified bucket in MinIO to a local path.
 
+        If file_path is a full file path (e.g., a temporary file), it skips the directory creation logic.
+
         This method handles both cases where the bucket name includes a folder path or not:
         - If no file path is provided, it automatically creates a directory structure based on the bucket name and saves the file there.
         - If a folder path is included in the bucket name, it extracts the bucket name and creates a subdirectory for the dataset.
@@ -696,6 +701,9 @@ class MedShapeNet:
         """
         # To later print the dataset name which it is downloaded from.
         dataset = bucket_name
+
+
+        # Handle if file_path is not choosen -> i.e. use default folder from the self.download_dir
         if file_path is None:
             # Handle bucket with or without folder paths. 
             # In other words handle both case (bucket per dataset) or one bucket multiple datasets (folders) the same. Flexible for future minio implementations.
@@ -717,6 +725,27 @@ class MedShapeNet:
                 bucket_dir = self.download_dir / bucket_name
                 bucket_dir.mkdir(parents=True, exist_ok=True)
                 file_path = bucket_dir / object_name
+        else:
+            # to later check if file_path is a directory or a temporary file used in other functions
+            file_path = Path(file_path)
+
+             # If the file_path has a suffix, it's a file (like a temporary file), so skip directory creation logic
+            if file_path.suffix:
+                # Proceed with the download immediately, skipping directory creation
+                pass
+            else:
+                if '/' in bucket_name:
+                    # Get the propper bucket name
+                    bucket_name = bucket_name.split('/')[0]
+
+                # create the file_path if it doesn't exist
+                file_path = Path(file_path) 
+                if not file_path.exists():
+                    file_path.mkdir(parents=True, exist_ok=True)
+
+                # create the file path of the file
+                file_path = file_path / object_name.split('/')[-1]
+
         
         try:
             self.minio_client.fget_object(bucket_name, object_name, str(file_path))
@@ -755,6 +784,8 @@ class MedShapeNet:
             if download_dir is None:
                 download_dir = self.download_dir / (folder_path if folder_path else bucket_name)
                 download_dir.mkdir(parents=True, exist_ok=True)
+            else:
+                download_dir = Path(download_dir)
 
             # Get a list of all files in the dataset
             files = self.dataset_files(dataset_name)  # Assuming this function returns all files including paths
@@ -900,7 +931,7 @@ class MedShapeNet:
 
 
     # Download a single stl in memory and convert it to numpy and save it
-    def download_stl_as_numpy(self, bucket_name: str, stl_file: str, output_dir: Path, print_output: True) -> None:
+    def download_stl_as_numpy(self, bucket_name: str, stl_file: str, output_dir: Path = None, print_output: bool = True) -> None:
         """
         Downloads an STL file from a specified bucket, converts it to a NumPy .npz file, and saves it in the given directory.
 
@@ -910,15 +941,19 @@ class MedShapeNet:
         :param print_output: Whether to print progress messages.
         """
 
+        # Handle a folder inside a bucket
         if '/' in bucket_name:
             # Handle case where bucket_name includes folder path
             bucket_name, dataset = bucket_name.split('/')
         else:
             dataset = bucket_name
 
+        # create the default output dir if none is set
         if output_dir is None:
             output_dir = self.download_dir / dataset / 'masks_numpy'
 
+        # Convert to path and create the directory
+        output_dir = Path(output_dir)
         if not output_dir.exists():
             output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -926,6 +961,7 @@ class MedShapeNet:
             # Download the STL file to a temporary location in memory
             with tempfile.NamedTemporaryFile(suffix='.stl') as temp_stl:
                 self.download_file(bucket_name, stl_file, temp_stl.name, print_output=False)
+                temp_stl.flush()  # Ensure the file is written properly
 
                 # Load the STL file
                 stl_mesh = mesh.Mesh.from_file(temp_stl.name)
@@ -939,7 +975,7 @@ class MedShapeNet:
                 np.savez_compressed(npz_file, vertices=vertices, faces=faces)
 
             if print_output:
-                print(f"Downloaded and converted STL: {stl_file} -> to numpy, from dataset/bucket: {bucket_name} and stored in: {npz_file}")
+                print(f"Downloaded and converted STL: {stl_file} -> to numpy, from dataset: {dataset} and stored in: {npz_file}")
 
         except Exception as e:
             print(f"An error occurred while processing STL file {stl_file}: {e}")
@@ -975,6 +1011,7 @@ class MedShapeNet:
                 masks_numpy_dir = self.download_dir / (folder_path if folder_path else bucket_name) / 'masks_numpy'
                 masks_numpy_dir.mkdir(parents=True, exist_ok=True)
             else:
+                download_dir = Path(download_dir)
                 download_dir.mkdir(parents=True, exist_ok=True)
                 masks_numpy_dir = download_dir
 
@@ -1043,6 +1080,7 @@ class MedShapeNet:
         except S3Error as e:
             print(f"Error occured: {e}")
 
+
     # Methods based on Sciebo
     @staticmethod
     def search_by_name(name: str = None, print_output = True) -> list:
@@ -1059,6 +1097,7 @@ class MedShapeNet:
 
         # Download the dataset into memory
         response = requests.get(r"https://medshapenet.ikim.nrw/uploads/MedShapeNetDataset.txt")
+        
         # Raise an exception for HTTP errors
         response.raise_for_status() 
 
@@ -1177,6 +1216,8 @@ class MedShapeNet:
     
 
         # work / testing in progress
+    
+    
     ''' npz file info - maybe usefull later
     def get_npz_file_info(self, npz_file_path: Path) -> None:
         """
@@ -1375,143 +1416,4 @@ if __name__ == "__main__":
         }
         '''
     )
-    
-
-    # # Convert downloaded dataset to npz masks
-    # for dataset in list_of_datasets:
-    #     print(f'\n{dataset}')
-    #     msn.dataset_stl_to_npz(dataset, num_threads = 4, output_dir = None, print_output = True)
-
-    # # download a single stl as a mask
-    # for dataset in list_of_datasets:
-    #     print(dataset)
-    #     files = msn.dataset_files(dataset, '.stl', False)
-    #     stl_file = files[0]
-    #     msn.download_stl_as_numpy(dataset, stl_file, None, True)
-
-    '''
-    Convert a single previously downloaded stl to a numpy mask
-    # Convert a single previously downloaded stl to a numpy mask
-    # Define the paths
-    stl_file = r"msn_downloads\asoca1\CoronaryArtery_0.stl"
-    npz_file = r"msn_downloads\asoca1\masks_numpy\CoronaryArtery_0.npz"
-    # Call the stl_to_npz method
-    msn.stl_to_npz(stl_file, npz_file, print_output=True)
-
-    # Download the dataset directly as numpy masks instead of STLs - time different num of workers
-    start_time_1 = time()
-    for dataset in list_of_datasets:
-        msn.download_dataset_masks(dataset, download_dir=None, num_threads = 1, print_output = True)
-    end_time_1 = time()
-    elapsed_time_1 = end_time_1 - start_time_1
-
-    start_time_4 = time()
-    for dataset in list_of_datasets:
-        msn.download_dataset_masks(dataset, download_dir=None, num_threads = 4, print_output = True)
-    end_time_4 = time()
-    elapsed_time_4 = end_time_4 - start_time_4
-
-    start_time_8 = time()
-    for dataset in list_of_datasets:
-        msn.download_dataset_masks(dataset, download_dir=None, num_threads = 8, print_output = True)
-    end_time_8 = time()
-    elapsed_time_8 = end_time_8 - start_time_8
-
-    start_time_32 = time()
-    for dataset in list_of_datasets:
-        msn.download_dataset_masks(dataset, download_dir=None, num_threads = 32, print_output = True)
-    end_time_32 = time()
-    elapsed_time_32 = end_time_32 - start_time_32
-
-    print(f"Elapsed time num_of_workers(32): {elapsed_time_32:.6f} seconds")
-    print(f"Elapsed time num_of_workers(8): {elapsed_time_8:.6f} seconds")
-    print(f"Elapsed time num_of_workers(4): {elapsed_time_4:.6f} seconds")
-    print(f"Elapsed time num_of_workers(1): {elapsed_time_1:.6f} seconds")
-
-    # # Tested:
-    # Elapsed time num_of_workers(32): 8.886791 seconds
-    # Elapsed time num_of_workers(8): 9.596343 seconds
-    # Elapsed time num_of_workers(4): 13.416085 seconds
-    # Elapsed time num_of_workers(1): 41.731470 seconds
-    '''
-
-    # # Example usage get NPZ info
-    # npz_file_path = Path("msn_downloads/asoca1/masks_numpy/CoronaryArtery_7.npz")
-    # msn.get_npz_file_info(npz_file_path)
-
-    # msn.visualize_random_stl_files(list_of_datasets[0], num_files = 4)
-
-    # # search by organ
-    # liver_download_urls = msn.search_by_name('liver', True)
-    # tumor_download_urls = msn.search_by_name('tumor', True)
-    # instrument_download_urls = msn.search_by_name('instrument', True)
-    # # print(liver_download_urls, "number of liver's found: ", len(liver_download_urls))
-
-
-    # test download file from url and search dataset and download
-    # instrument_download_urls = msn.search_by_name('instrument', False)
-    # url = instrument_download_urls[0]
-    # save_folder = r'test_download_from_url'
-    # for i in range(3):
-    #     download_file_from_url(url, save_folder,filename=None ,extension='.stl', print_output=True)
-
-    '''
-    from time import time
-    # start_time_1 = time()
-    # msn.search_and_download_by_name(name='face', max_threads=1, save_folder=None, extension='.stl', print_output=True)
-    # end_time_1 = time()
-    # elapsed_time_1 = end_time_1 - start_time_1
-
-    # start_time_2 = time()
-    # msn.search_and_download_by_name(name='face', max_threads=2, save_folder=None, extension='.stl', print_output=True)
-    # end_time_2 = time()
-    # elapsed_time_2 = end_time_2 - start_time_2
-
-    # start_time_4 = time()
-    # msn.search_and_download_by_name(name='face', max_threads=4, save_folder=None, extension='.stl', print_output=True)
-    # end_time_4 = time()
-    # elapsed_time_4 = end_time_4 - start_time_4
-
-    # start_time_8 = time()
-    # msn.search_and_download_by_name(name='face', max_threads=8, save_folder=None, extension='.stl', print_output=True)
-    # end_time_8 = time()
-    # elapsed_time_8 = end_time_8 - start_time_8
-
-    # start_time_16 = time()
-    # msn.search_and_download_by_name(name='face', max_threads=16, save_folder=None, extension='.stl', print_output=True)
-    # end_time_16 = time()
-    # elapsed_time_16 = end_time_16 - start_time_16
-    start_time_16 = time()
-    msn.search_and_download_by_name(name='face', max_threads=64, save_folder=None, extension='.stl', print_output=True)
-    end_time_16 = time()
-    elapsed_time_16 = end_time_16 - start_time_16
-
-    # print("FACE")
-    # print(f"Elapsed time num_of_workers(1): {elapsed_time_1:.6f} seconds")
-    # print(f"Elapsed time num_of_workers(2): {elapsed_time_2:.6f} seconds")
-    # print(f"Elapsed time num_of_workers(4): {elapsed_time_4:.6f} seconds")
-    # print(f"Elapsed time num_of_workers(8): {elapsed_time_8:.6f} seconds")
-    print(f"Elapsed time num_of_workers(16): {elapsed_time_16:.6f} seconds")
-    '''
-
-    """
-    Elapsed time num_of_workers(1): 85.026999 seconds
-    Elapsed time num_of_workers(2): 106.440322 seconds
-    Elapsed time num_of_workers(4): 92.529551 seconds
-    Elapsed time num_of_workers(8): 99.029089 seconds
-    Elapsed time num_of_workers(16): 79.506153 seconds
-    Elapsed time num_of_workers(64): 74.478786 seconds
-    _________ URLs:
-    """
-
-    # from time import time
-    # start_time_16 = time()
-    # # msn.search_and_download_by_name(name='instrument', max_threads=16, save_folder=None, extension='.stl', print_output=True)
-    # msn.search_and_download_by_name(name='face', max_threads=16, save_folder=None, extension='.stl', print_output=True)
-    # end_time_16 = time()
-    # elapsed_time_16 = end_time_16- start_time_16
-    # print(f"INSTRUMENTS Elapsed time num_of_workers(128): {elapsed_time_16:.6f} seconds")
-    # # INSTRUMENTS Elapsed time num_of_workers(64): 498.668118 seconds
-    # # INSTRUMENTS Elapsed time num_of_workers(128): 486.082569 seconds
-
     

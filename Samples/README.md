@@ -8,9 +8,11 @@ You can use the [GettingStarted.ipynb](https://github.com/GLARKI/MedShapeNet2.0/
 <br><br>
 Currently we have the following showcases:
 
+- GettingStarted
 - Anatomy completer
 - ...
 
 | **Title**     | **Folder name**   | **Description**   | **Used subset Dataset of MedShapeNet**  |
 | ------------- | ----------------- | ----------------- | ----------------- |
+| [GettingStarted](https://github.com/GLARKI/MedShapeNet2.0/blob/main/Samples/GettingStarted/GettingStarted.ipynb) | GettingStarted | Install and demonstrate the current functionality of MedShapeNet | All datsets could be used |
 | [Anatomy Completor](https://github.com/glarki/medshapenet-feedback/tree/main/anatomy-completor)|See link|Many-to-one map to complete missing organs and create pseudo-labels for wholebody CT-scans|[TotalSegmentator](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10546353/)|

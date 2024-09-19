@@ -1,32 +1,33 @@
 Metadata-Version: 2.1
 Name: MedShapeNet
-Version: 0.1.5
+Version: 0.1.7
 Summary: Python API to connect and work with the MedShapeNet Medical Shapes Database (https://medshapenet.ikim.nrw/)
 Home-page: https://github.com/GLARKI/MedShapeNet2.0
 Author: Gijs Luijten
 License: CC BY-NC-SA 4.0
-Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.8
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
-Classifier: License :: OSI Approved :: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
 Classifier: Intended Audience :: Science/Research
 Classifier: Topic :: Scientific/Engineering
 Classifier: Topic :: Scientific/Engineering :: Mathematics
+Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Classifier: Topic :: Multimedia :: Graphics :: 3D Modeling
 Classifier: Topic :: Scientific/Engineering :: Visualization
-Classifier: Topic :: 3D medical shapes
-Classifier: Topic :: Large shape repository
+Classifier: Topic :: Database
+Classifier: Topic :: Database :: Database Engines/Servers
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
 Requires-Dist: minio>=7.2.8
-Requires-Dist: tqdm>=4.50.0
-Requires-Dist: numpy>=1.17.0
-Requires-Dist: numpy-stl>=2.12.0
-Requires-Dist: requests>=2.22.0
+Requires-Dist: tqdm>=4.66.5
+Requires-Dist: numpy>=2.1.1
+Requires-Dist: numpy-stl>=3.1.2
+Requires-Dist: requests>=2.32.3
+Requires-Dist: fire>=0.6.0
 
 # MedShapeNet API
 The [**MedShapeNet Package (MSN-API)**](https://github.com/GLARKI/MedShapeNet2.0/tree/main/MedShapeNetAPI) is an API that enables direct connectivity to the MedShapeNet database, comprising over 100,000 3D shapes for the medical domain.<br> 
@@ -64,7 +65,7 @@ pip install MedShapeNet
 In the command line interface after installation with pip:
 
 ```bash
-msn_help
+msn help
 ```
 Or in Python:
 ```Python
@@ -86,7 +87,7 @@ print(msn.__doc__)
 ## Usage
 The MedShapeNet object will be imported into the Python environment as MedShapeNet, and the methods can be invoked directly either via *MedShapeNet.method(args)* syntax or by creating an instance (,see section about help function,) first.<br><br>
 
-You can use the [GettingStarted.ipynb](https://github.com/GLARKI/MedShapeNet2.0/blob/main/Samples/GettingStarted.ipynb) to get to know MedShapeNet's functionality.
+You can use the [GettingStarted.ipynb](https://github.com/GLARKI/MedShapeNet2.0/blob/main/Samples/GettingStarted/) to get to know MedShapeNet's functionality.
 ****
 
 ## reference/Cite

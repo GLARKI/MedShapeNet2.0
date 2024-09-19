@@ -34,7 +34,7 @@ pip install MedShapeNet
 In the command line interface after installation with pip:
 
 ```bash
-msn_help
+msn help
 ```
 Or in Python:
 ```Python
@@ -56,7 +56,7 @@ print(msn.__doc__)
 ## Usage
 The MedShapeNet object will be imported into the Python environment as MedShapeNet, and the methods can be invoked directly either via *MedShapeNet.method(args)* syntax or by creating an instance (,see section about help function,) first.<br><br>
 
-You can use the [GettingStarted.ipynb](https://github.com/GLARKI/MedShapeNet2.0/blob/main/Samples/GettingStarted.ipynb) to get to know MedShapeNet's functionality.
+You can use the [GettingStarted.ipynb](https://github.com/GLARKI/MedShapeNet2.0/blob/main/Samples/GettingStarted/) to get to know MedShapeNet's functionality.
 ****
 
 ## reference/Cite

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: MedShapeNet
-Version: 0.1.7
+Version: 0.1.8
 Summary: Python API to connect and work with the MedShapeNet Medical Shapes Database (https://medshapenet.ikim.nrw/)
 Home-page: https://github.com/GLARKI/MedShapeNet2.0
 Author: Gijs Luijten

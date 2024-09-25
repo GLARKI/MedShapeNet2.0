@@ -158,9 +158,9 @@ class MedShapeNet:
     '''
     # Initialize the class (minio)
     def __init__(self,
-                minio_endpoint: str = "127.0.0.1:9000", # Local host
+                minio_endpoint: str = "medshapenet.ddns.net:9000", # Local host
                 # minio_endpoint: str = "10.49.131.44:9000", # Wireless LAN adaptor wifi 04/09/2024 -> open access will come soon.
-                access_key: str = "admin", 
+                access_key: str = "msn_user_readwrite", 
                 secret_key: str = "ikim1234",
                 secure: bool = False,
                 timeout: int = 5
@@ -634,7 +634,7 @@ class MedShapeNet:
             if print_output:
                 print_dynamic_line()
                 if prefix != None:
-                    print(f'Files and overview of dataset: {bucket_name + '/' + prefix}\n ')
+                    print(f'Files and overview of dataset: {bucket_name}/ {prefix}\n ')
                 else:
                     print(f'Files and overview of dataset: {bucket_name}\n ')
 
@@ -1416,4 +1416,3 @@ if __name__ == "__main__":
         }
         '''
     )
-    

@@ -43,11 +43,15 @@ Please provide the following information:
 - Other comments
 ****
 ### [Python API](https://pypi.org/project/MedShapeNetCore/) 
-*under construction*
+The Python API is under heavy construction.
+Currently, in order to search and download shapes from the entire (Sciebo hosted) database, users must use the 'search_by_name' and 'search_and_download_by_name' methods either via Python or the Command Line interface.
+All other methods are available only for the showcases - samples hosted on a MinIO S3 storage.
+We are in the process of requiring large S3 storage from the [COSCINE](https://about.coscine.de/) project which will allow us to have up to 100TB multi redudant storage for at least 10 years!
+
 ```bash
 pip install MedShapeNet
 ```
-*under heavy construction, it will be made ready soon*
+*Disclaimer: under heavy construction, full functionality and access to all datasets will come in the coming months*
 
 If you desire to contribute by making examples or additional functionallity you are very welcome. Please [contact me](#contact) and perform a [pull request](https://github.com/GLARKI/MedShapeNet2.0/pulls).
 ****

@@ -1,7 +1,7 @@
 # Simple MinIO Object Storage in Docker
 ### Develop API Functions Locally
 A simple Docker Compose and environment file to set up your own MinIO.<br>This can be helpful when developing and debugging API methods or creating specific classes.<br><br>
-To work locally with MedShapeNet use the datasets from [Test_datasets_for_MinIO_bucket](https://github.com/GLARKI/MedShapeNet2.0/tree/main/minio/Test_datasets_for_MinIO_bucket) with the MinIO setup.<br>[pip install PYPI package MedShapeNet 0.1.8](https://pypi.org/project/MedShapeNet/0.1.8/) works with this setup -> 'pip install MedShapeNet==0.1.8'<br><Br>
+To work locally with MedShapeNet use the datasets from [Test_datasets_for_MinIO_bucket](https://github.com/GLARKI/MedShapeNet2.0/tree/main/minio/Test_datasets_for_MinIO_bucket) with the MinIO setup.<br>[pip install PYPI package MedShapeNet 0.1.8](https://pypi.org/project/MedShapeNet/0.1.8/) works with this setup -> 'pip install MedShapeNet==0.1.8'; later versions might not point to local host and the 'MINIO_SERVER_URL' in the .env should be adapted for local development.<br><Br>
 These test shapes are made using the data from the [MedShapeNetCore dataset](https://zenodo.org/records/10423181) which is a lightweight subset of [MedShapeNet Database](https://medshapenet-ikim.streamlit.app/Download) / [website](https://medshapenet.ikim.nrw/) and therefore are suboptimal.
 
 **Setup Instructions**

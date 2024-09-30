@@ -10,7 +10,7 @@ Become a dataset contributor, help the shape driven community, and increase the 
 [💻 Main Project website](https://medshapenet.ikim.nrw/)<br>
 [&#127760; MedShapeNet webinterface](https://medshapenet-ikim.streamlit.app/)<br>
 [&#128196; MedShapeNet 1.0 arXiv Paper](https://arxiv.org/pdf/2308.16139)<br>
-[🛠 MedShapeNet 🐍 Python-API](under construction)<br>
+[🛠 MedShapeNet 🐍 Python-API](https://pypi.org/project/MedShapeNet/)<br>
 [📚 Papers/Projects citing MedShapeNet]()(*Under construction*)<br>
 ****
 ### content
@@ -42,7 +42,7 @@ Please provide the following information:
 - Contributor(s) information: name, affiliation and homepage
 - Other comments
 ****
-### [Python API](https://pypi.org/project/MedShapeNetCore/) 
+### [Python API](https://pypi.org/project/MedShapeNet/) 
 The Python API is under heavy construction.
 Currently, in order to search and download shapes from the entire (Sciebo hosted) database, users must use the 'search_by_name' and 'search_and_download_by_name' methods either via Python or the Command Line interface.
 All other methods are available only for the showcases - samples hosted on a MinIO S3 storage.

@@ -971,11 +971,11 @@ class MedShapeNet:
         """
         try:
 
-            # Determine if the bucket_name is a bucket or a bucket/folder name -> extract bucket name
-            if '/' in bucket_name:
-                bucket_name, folder_path  = bucket_name.split('/', 1)
-            else:
-                folder_path = ""
+            # # Determine if the bucket_name is a bucket or a bucket/folder name -> extract bucket name
+            # if '/' in bucket_name:
+            #     bucket_name, folder_path  = bucket_name.split('/', 1)
+            # else:
+            #     folder_path = ""
 
 
             # Use dataset_files to get a list of all files in the bucked for file counts and details
@@ -988,12 +988,14 @@ class MedShapeNet:
 
             # Read and print the contents of cite.txt and licence.txt if available
             print_dynamic_line()
-            if len(folder_path) > 0: print(f'\nDATASET: {bucket_name}/{folder_path}')
-            else: print(f'\nDATASET: {bucket_name}')
+            # if len(folder_path) > 0: print(f'\nDATASET: {bucket_name}/{folder_path}')
+            # else: print(f'\nDATASET: {bucket_name}')
+            print(f'\nDATASET: {bucket_name}')
             for obj in files:
 
                 # Check if file is inside the specified folder path
-                if folder_path and not obj.startswith(folder_path):
+                # if folder_path and not obj.startswith(folder_path):
+                if bucket_name and not obj.startswith(bucket_name):
                     continue
 
                 if obj.endswith("licence.txt"):
@@ -1004,7 +1006,7 @@ class MedShapeNet:
                     cite_content = self.minio_client.get_object(bucket_name, obj)
                     print("\n\nCITATION INFO:")
                     print(cite_content.read().decode('utf-8'))
-                                
+
                 # Count file types
                 if obj.endswith('.txt'):
                     txt_count += 1

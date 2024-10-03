@@ -30,7 +30,7 @@ Become a dataset contributor, help the shape driven community, and increase the 
 - **Report issues with shapes, the website or the Python API:** Should you encounter any corrupted, incorrect, or unusable shapes, we kindly request that you report them to us. Alternatively, if you are the original data set owner, you may request the removal of specific shapes. [[issue](https://github.com/GLARKI/MedShapeNet2.0/issues)] *Please note that the API is currently under construction*
 - **Contribute Shapes:** Contribute medical shapes extracted from your own datasets to the MedShapeNet Database by contacting me, see [contribute shapes](#contribute-shapes).
 - **Showcase Applications** (*under construction*): Create a new folder in samples with the source code of your project. Describe the project and how to use it in a readme.md, including reference to your paper if possible. Perform a [pull request](https://github.com/GLARKI/MedShapeNet2.0/pulls
-) let others enjoy! A basic example [here](https://github.com/glarki/medshapenet-feedback/tree/main/anatomy-completor) (*Under constuction for the API*).
+) let others enjoy! A basic example [here](https://github.com/GLARKI/MedShapeNet2.0/tree/main/Samples) (*Under constuction for the API*).
 - **Suggest Improvements:** Tell us the desired functions you want in the [MedShapeNet web interface](https://medshapenet-ikim.streamlit.app/) or API (*Under construction*) here [[issue](https://github.com/GLARKI/MedShapeNet2.0/issues)].
 ****
 ### Contribute shapes

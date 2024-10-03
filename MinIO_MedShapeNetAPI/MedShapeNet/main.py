@@ -991,12 +991,15 @@ class MedShapeNet:
             # if len(folder_path) > 0: print(f'\nDATASET: {bucket_name}/{folder_path}')
             # else: print(f'\nDATASET: {bucket_name}')
             print(f'\nDATASET: {bucket_name}')
+            if '/' in bucket_name:
+                bucket_name, _  = bucket_name.split('/', 1)
+                
             for obj in files:
 
-                # Check if file is inside the specified folder path
-                # if folder_path and not obj.startswith(folder_path):
-                if bucket_name and not obj.startswith(bucket_name):
-                    continue
+                # # Check if file is inside the specified folder path
+                # # if folder_path and not obj.startswith(folder_path):
+                # if bucket_name and not obj.startswith(bucket_name):
+                #     continue
 
                 if obj.endswith("licence.txt"):
                     licence_content = self.minio_client.get_object(bucket_name, obj)

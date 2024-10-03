@@ -32,7 +32,7 @@ with open('README.md', 'r') as f:
 # Setup information
 setup(
     name='MedShapeNet',
-    version='0.1.23',
+    version='0.1.25',
     description='Python API to connect and work with the MedShapeNet Medical Shapes Database (https://medshapenet.ikim.nrw/)',
     author='Gijs Luijten',
     packages=find_packages(),

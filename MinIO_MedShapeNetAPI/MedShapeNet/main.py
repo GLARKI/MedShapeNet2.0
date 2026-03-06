@@ -584,8 +584,6 @@ class MedShapeNet:
                 minio_endpoint: str = "medshapenet.ddns.net:9000",
                 access_key: str = "msn_user_readwrite", 
                 secret_key: str = "ikim1234",
-                # access_key: str = "admin", 
-                # secret_key: str = "!Butter%Fly^Effect&toetsen*bordt",
                 secure: bool = False,
                 timeout: int = 5,
                 create_download_dir = True
